@@ -5,7 +5,7 @@
   <meta name="theme-color" content="#090d16"><meta name="description" content="Pipe-Web — discover, compare and visualize optimal flow paths across connected networks.">
   <title>Pipe-Web — Path Intelligence</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="app-shell">
@@ -40,6 +40,8 @@
       <div class="section-title"><div><span class="step">02</span><strong>Live flow map</strong><span class="muted inline-muted"> / Network topology</span></div><div class="map-tools"><span class="legend"><i class="legend-line optimal"></i> Optimal</span><span class="legend"><i class="legend-line alternate"></i> Alternative</span><button id="animateBtn" class="small-btn">Ⅱ Pause flow</button></div></div>
       <div class="map-panel panel">
         <div class="map-meta"><span id="networkName">METRO / URBAN ROAD NETWORK</span><span id="nodeCount">12 NODES · 19 LINKS</span></div>
+        <div class="view-switch" role="group" aria-label="Visualization mode"><button class="view-btn active" data-view="schematic">Schematic</button><button class="view-btn" data-view="map">2D Map</button><button class="view-btn" data-view="globe">3D Globe</button></div>
+        <div id="geoMap" class="geo-view" hidden></div><div id="geoGlobe" class="geo-view globe-view" hidden></div>
         <svg id="networkMap" viewBox="0 0 900 440" role="img" aria-label="Interactive network diagram showing origin, destination and optimized flow paths"></svg>
         <div class="map-footer"><span><b class="origin-key"></b> Origin <b class="destination-key"></b> Destination</span><span id="mapHint">Select a route and run optimization</span><span class="mono">SCHEMATIC VIEW · NOT TO SCALE</span></div>
       </div>
@@ -52,5 +54,7 @@
   </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/globe.gl"></script>
+<script src="app.js"></script><script src="geo-view.js"></script>
 </body></html>
