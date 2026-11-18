@@ -53,7 +53,7 @@
       layer.bindTooltip(e[0]+" ↔ "+e[1]);mapLayers.push(layer);
     });
     const rankColors=["#35d39a","#e8b94e","#ef6262"];
-    (s.paths||[]).forEach((path,index)=>{
+    (s.paths||[]).map((path,index)=>({path,index})).reverse().forEach(({path,index})=>{
       const color=rankColors[Math.min(index,2)],selected=index===s.selected;
       path.edges.forEach(e=>{
         const a=nodes[e[0]],b=nodes[e[1]];
@@ -105,7 +105,7 @@
     const points=s.network.nodes.map(n=>{const p=nodes[n[0]];return{lat:p.lat,lng:p.lng,color:n[0]===s.origin?"#e5b66c":n[0]===s.destination?"#67c9e8":"#b8c9dc",label:n[0]+" · "+n[1]};});
     const rankColors=["#35d39a","#e8b94e","#ef6262"];
     const arcs=[];
-    (s.paths||[]).forEach((path,index)=>path.edges.forEach(e=>arcs.push({
+    (s.paths||[]).map((path,index)=>({path,index})).reverse().forEach(({path,index})=>path.edges.forEach(e=>arcs.push({
       startLat:nodes[e[0]].lat,startLng:nodes[e[0]].lng,
       endLat:nodes[e[1]].lat,endLng:nodes[e[1]].lng,
       color:rankColors[Math.min(index,2)],selected:index===s.selected
