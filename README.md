@@ -105,3 +105,8 @@ MIT. See [LICENSE](LICENSE).
 ### A* routing
 
 The worker uses an admissible geographic heuristic for distance and time objectives. Cost and energy use a zero heuristic to preserve optimality. Graphs without coordinates safely fall back to Dijkstra behavior. Worker tests cover alternatives, one-way edges, congestion, antimeridian coordinates, disconnected graphs, identical endpoints and a 100,000-node chain.
+
+
+### OpenStreetMap download and cache
+
+OSM road downloads are bounded to a maximum bounding-box area of 0.25 square degrees and use an 8-second client timeout with two public Overpass endpoints. Successful responses are cached in IndexedDB for 30 days. A valid cached graph is served immediately; if the cache has expired and the network is unavailable, the app serves the stale graph with its original retrieval date. Browser storage may be unavailable or evicted, in which case downloads still work without caching. Large place searches are intentionally narrowed around the geocoded center; users should search a smaller city or neighborhood for denser detail. The area cap is expressed in degrees squared, not a fixed physical 250 km square, because longitude scale varies with latitude.
