@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090d16"><meta name="description" content="Pipe-Web — discover, compare and visualize optimal flow paths across connected networks.">
+  <title>Pipe-Web — Path Intelligence</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#"><span class="brand-mark">P<span>↗</span></span><span>PIPE<span class="brand-light">WEB</span><small>PATH INTELLIGENCE</small></span></a>
+    <div class="side-label">WORKSPACE</div>
+    <button class="nav-item active"><span>◈</span> Path explorer</button>
+    <button class="nav-item" id="networkInfoBtn"><span>⌘</span> Network overview</button>
+    <div class="side-label section-gap">NETWORK TYPE</div>
+    <div class="domain-list" id="domainList">
+      <button class="domain active" data-domain="road"><i class="dot road"></i>Road network</button>
+      <button class="domain" data-domain="pipeline"><i class="dot pipeline"></i>Pipeline</button>
+      <button class="domain" data-domain="rail"><i class="dot rail"></i>Rail network</button>
+      <button class="domain" data-domain="data"><i class="dot data"></i>Data network</button>
+      <button class="domain" data-domain="robot"><i class="dot robot"></i>Robot navigation</button>
+    </div>
+    <div class="sidebar-bottom"><div class="live-indicator"><span></span> SIMULATION ONLINE</div><p>Local demo network<br>All metrics are simulated.</p><span class="version">PIPE-WEB / 0.1.0</span></div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div><div class="eyebrow">PATH INTELLIGENCE / EXPLORER</div><h1>Find the <em>best path.</em></h1><p class="subhead">See how flow moves. Understand why a route wins.</p></div><div class="top-actions"><span class="system-status"><i></i> ENGINE READY</span><button class="icon-btn" id="resetBtn" title="Reset network">↺</button></div></header>
+    <section class="control-panel panel">
+      <div class="panel-heading"><div><span class="step">01</span><strong>Define your flow</strong></div><span class="muted">Configure a route to optimize</span></div>
+      <div class="controls-grid">
+        <label>ORIGIN<select id="origin"></select></label><div class="swap-wrap"><button id="swapBtn" class="swap-btn" title="Swap origin and destination">⇄</button></div>
+        <label>DESTINATION<select id="destination"></select></label>
+        <label>OPTIMIZE FOR<select id="objective"><option value="time">Fastest time</option><option value="distance">Shortest distance</option><option value="cost">Lowest cost</option><option value="energy">Lowest energy</option></select></label>
+        <button id="findBtn" class="primary-btn">Find optimal paths <span>↗</span></button>
+      </div>
+      <div class="advanced-row"><label class="check-label"><input type="checkbox" id="avoidCongestion" checked> Avoid congested segments</label><label class="check-label"><input type="checkbox" id="showAlternatives" checked> Show alternatives</label><span class="hint">Demo data · deterministic network</span></div>
+    </section>
+    <section class="visual-section">
+      <div class="section-title"><div><span class="step">02</span><strong>Live flow map</strong><span class="muted inline-muted"> / Network topology</span></div><div class="map-tools"><span class="legend"><i class="legend-line optimal"></i> Optimal</span><span class="legend"><i class="legend-line alternate"></i> Alternative</span><button id="animateBtn" class="small-btn">Ⅱ Pause flow</button></div></div>
+      <div class="map-panel panel">
+        <div class="map-meta"><span id="networkName">METRO / URBAN ROAD NETWORK</span><span id="nodeCount">12 NODES · 19 LINKS</span></div>
+        <svg id="networkMap" viewBox="0 0 900 440" role="img" aria-label="Interactive network diagram showing origin, destination and optimized flow paths"></svg>
+        <div class="map-footer"><span><b class="origin-key"></b> Origin <b class="destination-key"></b> Destination</span><span id="mapHint">Select a route and run optimization</span><span class="mono">SCHEMATIC VIEW · NOT TO SCALE</span></div>
+      </div>
+    </section>
+    <section class="results-section">
+      <div class="section-title"><div><span class="step">03</span><strong>Path analysis</strong><span class="muted inline-muted"> / Ranked results</span></div><span id="resultCount" class="muted">Awaiting optimization</span></div>
+      <div id="results" class="results-grid"><div class="empty-state panel"><span class="empty-icon">⌁</span><strong>Your paths will appear here</strong><p>Choose an origin and destination, then run the optimizer.</p></div></div>
+    </section>
+    <footer>PIPE-WEB <span>PATHS ARE THE PRODUCT.</span><span>Built for clarity · v0.1.0</span></footer>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="app.js"></script>
+</body></html>
