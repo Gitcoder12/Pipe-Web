@@ -5,7 +5,7 @@ const context={window,Date,Math,Number,Array,Error,AbortController,setTimeout,cl
 vm.runInNewContext(fs.readFileSync("src/osm/overpass.js","utf8"),context);
 const api=window.PipeWebOverpass,close=(a,b)=>assert.ok(Math.abs(a-b)<1e-8);
 let r=api.clampBbox([1,2,1.1,2.1]);assert.equal(r.clamped,false);assert.deepEqual(Array.from(r.bbox),[1,2,1.1,2.1]);
-for(const b of [[0,0,1,1],[0,0,1,.1],[0,0,.1,1],[-1,-1,1,1],[0,0,10,.01]]){r=api.clampBbox(b);assert.equal(r.clamped,true);close((r.bbox[2]-r.bbox[0])*(r.bbox[3]-r.bbox[1]),.25);}
+for(const b of [[0,0,1,1],[0,0,1,.3],[0,0,.3,1],[-1,-1,1,1],[0,0,10,.03]]){r=api.clampBbox(b);assert.equal(r.clamped,true);close((r.bbox[2]-r.bbox[0])*(r.bbox[3]-r.bbox[1]),.25);}
 for(const b of [[1,1,0,2],[0,0,1,1,2],["a",0,1,1]])assert.throws(()=>api.clampBbox(b));
 assert.equal(api.clampBbox([0,0,.5,.5]).clamped,false);
 (async()=>{
