@@ -24,9 +24,9 @@
   function updateCounts() {
     const shipCount = state.ships.size;
     const airCount = state.air.length;
-    const airConfigured = Boolean(window.PIPEWEB_CONFIG && window.PIPEWEB_CONFIG.aircraftApi && !/opensky-network\.org\/api/i.test(window.PIPEWEB_CONFIG.aircraftApi));
+    const airConfigured = state.air.length > 0;
     const shipLabel = shipCount.toLocaleString() + " ships";
-    const airLabel = airConfigured ? airCount.toLocaleString() + " aircraft" : "air unavailable";
+    const airLabel = airConfigured ? airCount.toLocaleString() + " aircraft" : "air: Not yet implemented";
     status(shipCount ? "🚢 " + shipLabel + " · ✈️ " + airLabel : "Connecting to live feed…", shipCount ? "live" : "connecting");
   }
   function initGlobe() {
@@ -128,17 +128,12 @@
       return;
     }
     if (name === "air") {
-      const endpoint = window.PIPEWEB_CONFIG && window.PIPEWEB_CONFIG.aircraftApi;
-      if (!endpoint || /opensky-network\.org\/api/i.test(endpoint)) {
-        if (button) { button.classList.remove("active"); button.setAttribute("aria-pressed", "false"); }
-        toast("Aircraft feed is not configured. Deploy the Worker first.");
-      } else {
-        toast("Aircraft endpoint detected; aircraft rendering is not enabled in this landing build yet.");
-        if (button) { button.classList.remove("active"); button.setAttribute("aria-pressed", "false"); }
-      }
+      if (button) { button.classList.remove("active"); button.setAttribute("aria-pressed", "false"); }
+      toast("Air layer: Not yet implemented in the landing globe.");
       return;
     }
-    if (enabled) toast(name.charAt(0).toUpperCase() + name.slice(1) + " layer has no verified live feed connected yet.");
+    if (button) { button.classList.remove("active"); button.setAttribute("aria-pressed", "false"); }
+    if (enabled) toast(name.charAt(0).toUpperCase() + name.slice(1) + " layer: Not yet implemented.");
   }
   function syncMobileLayers() {
     const source = $("layerTray"), target = $("mobileLayerButtons");
@@ -148,10 +143,6 @@
       clone.addEventListener("click", () => {
         const original = source.querySelector('[data-layer="' + clone.dataset.layer + '"]');
         const enabled = !original.classList.contains("active");
-        if (clone.dataset.layer !== "sea" && clone.dataset.layer !== "air") {
-          toast(clone.dataset.layer.charAt(0).toUpperCase() + clone.dataset.layer.slice(1) + " layer has no verified live feed connected yet.");
-          return;
-        }
         setLayer(clone.dataset.layer, enabled);
         clone.classList.toggle("active", enabled);
       });
@@ -225,8 +216,7 @@
   $("layerTray").addEventListener("click", event => {
     const button = event.target.closest(".layer-pill"); if (!button) return;
     const name = button.dataset.layer, enabled = !button.classList.contains("active");
-    if (name === "air" || name === "sea") setLayer(name, enabled);
-    else { button.classList.toggle("active", enabled); button.setAttribute("aria-pressed", String(enabled)); if (enabled) setLayer(name, true); }
+    setLayer(name, enabled);
   });
   $("layerSheetBackdrop").addEventListener("click", () => { $("layerSheet").hidden = true; $("layerSheetBackdrop").hidden = true; });
   $("mobileLayersToggle").addEventListener("click", () => { $("layerSheet").hidden = false; $("layerSheetBackdrop").hidden = false; });

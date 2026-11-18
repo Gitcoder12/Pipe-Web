@@ -2,9 +2,9 @@
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const center = { lat: 16.5062, lng: 80.6480 };
+  const center = null;
   let mode = "schematic", map = null, globe = null, mapLayers = [], globeReady = false;
-  const AIRCRAFT_API = (window.PIPEWEB_CONFIG && window.PIPEWEB_CONFIG.aircraftApi) || "https://opensky-network.org/api/states/all";
+  const AIRCRAFT_API = window.PIPEWEB_CONFIG && window.PIPEWEB_CONFIG.aircraftApi;
   const AIRCRAFT_REFRESH_MS = 15 * 60 * 1000;
   let backdropGlobe = null;
   function initEarthBackdrop() {
@@ -42,8 +42,8 @@
     ],links:[["North Sea","London"],["North Sea","Berlin"],["Algiers","London"],["Algiers","Cairo"],["Cairo","Riyadh"],["Riyadh","Doha"],["Doha","Mumbai"],["Mumbai","Singapore"],["Singapore","Perth"],["Perth","Tokyo"],["Baku","Berlin"],["Lagos","Johannesburg"],["Doha","Tokyo"]]}
   };
   const nodeCoords = (node) => ({
-    lat: Number.isFinite(node[4]) ? node[4] : center.lat + (220 - node[3]) * 0.00019,
-    lng: Number.isFinite(node[5]) ? node[5] : center.lng + (node[2] - 450) * 0.00022
+    lat: Number.isFinite(node[4]) ? node[4] : null,
+    lng: Number.isFinite(node[5]) ? node[5] : null
   });
   function state(){ return window.PipeWeb ? window.PipeWeb.getState() : null; }
   function setMode(next) {
@@ -66,6 +66,7 @@
   function drawMap() {
     const s=state(); if(!s||!map) return;
     mapLayers.forEach(layer=>map.removeLayer(layer));mapLayers=[];
+    if(s.network.nodes.some(n=>!Number.isFinite(n[4])||!Number.isFinite(n[5]))){$("geoMap").innerHTML="<div class=\"geo-error\">2D route plotting: Not yet implemented for networks without imported geographic coordinates.</div>";return;}
     const nodes=Object.fromEntries(s.network.nodes.map(n=>[n[0],{raw:n,...nodeCoords(n)}]));
     s.network.edges.forEach(e=>{
       const a=nodes[e[0]],b=nodes[e[1]],key=[e[0],e[1]].sort().join("-");
@@ -112,6 +113,10 @@
     globe.controls().autoRotate=true; globe.controls().autoRotateSpeed=0.35;
   }
   function drawWorld() {
+    globe.pointsData([]).arcsData([]);
+    $("networkName").textContent="WORLD FLOWS"; $("nodeCount").textContent="NOT YET IMPLEMENTED";
+    $("worldDescription").textContent="Verified global corridor geometry and live flow telemetry: Not yet implemented.";
+    return;
     if($("worldFlowType").value==="maritime"&&window.PipeWebMaritime){
       const feed=window.PipeWebMaritime.snapshot(),ships=feed.ships||[];
       if(ships.length){
@@ -151,8 +156,9 @@
   }
   async function fetchAircraft(force=false) {
     if(aircraftBusy)return;
+    if(!AIRCRAFT_API){setAircraftStatus("OFFLINE","Aircraft Worker: Not yet implemented until endpoint configured.");$("aircraftSource").textContent="Not yet implemented: deploy workers/live-api.js and set aircraftApi in config.js.";return;}
     if(!force&&aircraftFetchedAt&&Date.now()-aircraftFetchedAt<AIRCRAFT_REFRESH_MS){renderAircraft();return;}
-    aircraftBusy=true;setAircraftStatus("CONNECTING","REQUESTING OPENSKY");
+    aircraftBusy=true;setAircraftStatus("CONNECTING","REQUESTING CONFIGURED WORKER");
     try{
       const response=await fetch(AIRCRAFT_API,{headers:{accept:"application/json"},cache:"no-store"});
       if(!response.ok)throw new Error("OpenSky returned HTTP "+response.status);

@@ -1,9 +1,7 @@
-/* Optional same-origin or Cloudflare Worker data endpoints. Keep secrets out of this file. */
-window.PIPEWEB_CONFIG = {
-  // After deploying workers/live-api.js, replace this with
-  // https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/api/aircraft
-  aircraftApi: "https://opensky-network.org/api/states/all",
-  // Set this to a same-origin Cloudflare Worker endpoint backed by a licensed AIS provider.
-  // Never put an AIS provider secret in this public client-side file.
+/* Public client configuration. Never put provider credentials here. */
+window.PIPEWEB_CONFIG = Object.freeze({
+  // Configure after deploying workers/live-api.js. Example: https://your-worker.workers.dev/api/aircraft
+  aircraftApi: "",
+  // Licensed AIS integrations must be configured server-side.
   vesselsApi: ""
-};
+});

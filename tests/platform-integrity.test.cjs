@@ -1,0 +1,13 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs");
+const config=fs.readFileSync("config.js","utf8"),landing=fs.readFileSync("src/ui/landing.js","utf8"),geo=fs.readFileSync("geo-view.js","utf8"),html=fs.readFileSync("index.html","utf8"),worker=fs.readFileSync("workers/live-api.js","utf8");
+assert.equal(fs.readFileSync("README.md","utf8").trimEnd().split("\n").length,10);
+assert.match(config,/aircraftApi:\s*""/);
+assert.doesNotMatch(geo,/opensky-network\.org\/api\/states\/all/);
+assert.match(geo,/if\(!AIRCRAFT_API\)/);
+assert.match(geo,/Not yet implemented for networks without imported geographic coordinates/);
+assert.match(geo,/Verified global corridor geometry and live flow telemetry: Not yet implemented/);
+assert.match(landing,/layer: Not yet implemented/);
+assert.match(worker,/url\.pathname !== "\/api\/aircraft"/);
+assert.match(html,/World flows · Not yet implemented/);
+console.log("Platform integrity tests passed.");
