@@ -51,6 +51,12 @@
     window.dispatchEvent(new CustomEvent("pipeweb:render"));
   }
   
+  function updateRankLegend(){
+    const timeMode=$("objective").value==="time";
+    $("rankLegendOne").textContent=timeMode?"Fastest":"Best";
+    $("rankLegendTwo").textContent=timeMode?"Medium":"2nd";
+    $("rankLegendThree").textContent=timeMode?"Slowest":"3rd";
+  }
   function renderResults(){
     const el=$("results");
     if(!paths.length){el.innerHTML='<div class="empty-state panel"><span class="empty-icon">⌁</span><strong>No connected path found</strong><p>Try another pair of endpoints or network.</p></div>';return;}
@@ -78,7 +84,7 @@
   function fmt(n){return Number(n.toFixed(1)).toString()}
   function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2200)}
   function setDomain(name){domain=name;document.querySelectorAll(".domain").forEach(b=>b.classList.toggle("active",b.dataset.domain===name));paths=[];populateSelects();renderMap();renderResults();$("resultCount").textContent="Awaiting optimization";$("mapHint").textContent="Select a route and run optimization";$("networkName").textContent=domains[domain].name}
-  $("findBtn").addEventListener("click",optimize);$("swapBtn").addEventListener("click",()=>{const a=$("origin").value;$("origin").value=$("destination").value;$("destination").value=a;if(paths.length)optimize()});$("resetBtn").addEventListener("click",()=>{setDomain(domain);$("objective").value="time";$("avoidCongestion").checked=true;$("showAlternatives").checked=true;toast("Explorer reset.")});document.querySelectorAll(".domain").forEach(b=>b.addEventListener("click",()=>setDomain(b.dataset.domain)));$("animateBtn").addEventListener("click",()=>{paused=!paused;$("networkMap").querySelectorAll("animateMotion").forEach(a=>paused?a.pauseAnimations():a.unpauseAnimations());$("animateBtn").textContent=paused?"▶ Resume flow":"Ⅱ Pause flow"});$("networkInfoBtn").addEventListener("click",()=>toast(`${domains[domain].nodes.length} nodes · ${domains[domain].edges.length} bidirectional links · simulated network`));$("objective").addEventListener("change",()=>{if(paths.length)optimize()});$("avoidCongestion").addEventListener("change",()=>{if(paths.length)optimize()});$("showAlternatives").addEventListener("change",()=>{if(paths.length)optimize()});
+  $("findBtn").addEventListener("click",optimize);$("swapBtn").addEventListener("click",()=>{const a=$("origin").value;$("origin").value=$("destination").value;$("destination").value=a;if(paths.length)optimize()});$("resetBtn").addEventListener("click",()=>{setDomain(domain);$("objective").value="time";$("avoidCongestion").checked=true;$("showAlternatives").checked=true;toast("Explorer reset.")});document.querySelectorAll(".domain").forEach(b=>b.addEventListener("click",()=>setDomain(b.dataset.domain)));$("animateBtn").addEventListener("click",()=>{paused=!paused;$("networkMap").querySelectorAll("animateMotion").forEach(a=>paused?a.pauseAnimations():a.unpauseAnimations());$("animateBtn").textContent=paused?"▶ Resume flow":"Ⅱ Pause flow"});$("networkInfoBtn").addEventListener("click",()=>toast(`${domains[domain].nodes.length} nodes · ${domains[domain].edges.length} bidirectional links · simulated network`));$("objective").addEventListener("change",()=>{updateRankLegend();if(paths.length)optimize()});$("avoidCongestion").addEventListener("change",()=>{if(paths.length)optimize()});$("showAlternatives").addEventListener("change",()=>{if(paths.length)optimize()});
 
   function haversine(a,b){const rad=x=>x*Math.PI/180,R=6371,dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),v=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(v))}
   function finalizeNetwork(coords,links,name){
@@ -113,5 +119,5 @@
   }catch(err){$("importStatus").textContent=err.message||"OSM download failed";toast(err.message||"Could not load OSM roads.")}finally{button.disabled=false;button.textContent="Load OSM roads ↗"}});
 
   window.PipeWeb={getState:()=>({domain,network:domains[domain],paths,selected,objective:$("objective").value,origin:$("origin").value,destination:$("destination").value})};
-  populateSelects();renderMap();renderResults();
+  populateSelects();updateRankLegend();renderMap();renderResults();
 })();
