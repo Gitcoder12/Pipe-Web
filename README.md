@@ -70,6 +70,7 @@ See [LIVE-DATA.md](LIVE-DATA.md) for the free-first data-source inventory, worki
 | File | Responsibility |
 |---|---|
 | `index.html` | Application structure and controls |
+| `config.js` | Public data endpoint configuration (no secrets) |
 | `styles.css` | Responsive interface, route palette and motion |
 | `app.js` | Graph data, Dijkstra routing, alternatives, ranking and schematic rendering |
 | `geo-view.js` | Leaflet map and Globe.gl visualization |
