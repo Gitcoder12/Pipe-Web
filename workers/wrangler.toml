@@ -1,0 +1,3 @@
+name = "pipe-web-live-api"
+main = "live-api.js"
+compatibility_date = "2026-11-18"
