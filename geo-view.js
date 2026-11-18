@@ -6,6 +6,26 @@
   let mode = "schematic", map = null, globe = null, mapLayers = [], globeReady = false;
   const AIRCRAFT_API = (window.PIPEWEB_CONFIG && window.PIPEWEB_CONFIG.aircraftApi) || "https://opensky-network.org/api/states/all";
   const AIRCRAFT_REFRESH_MS = 15 * 60 * 1000;
+  let backdropGlobe = null;
+  function initEarthBackdrop() {
+    const host = $("earthBackdrop");
+    if (!host || !window.Globe || backdropGlobe) return;
+    backdropGlobe = Globe()(host)
+      .width(window.innerWidth)
+      .height(window.innerHeight)
+      .backgroundColor("rgba(0,0,0,0)")
+      .showAtmosphere(true)
+      .atmosphereColor("#4c9fc4")
+      .atmosphereAltitude(0.19)
+      .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
+      .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
+      .showGraticules(false)
+      .rendererConfig({ alpha: true, antialias: false, powerPreference: "low-power" });
+    backdropGlobe.controls().enabled = false;
+    backdropGlobe.controls().autoRotate = true;
+    backdropGlobe.controls().autoRotateSpeed = 0.22;
+  }
+  initEarthBackdrop();
   let aircraftCache = [], aircraftFetchedAt = 0, aircraftBusy = false, aircraftTimer = null;
   const worldLayers = {
     air: { title:"GLOBAL AIR CONNECTIVITY", description:"Illustrative connections between major world aviation hubs.", hubs:[
@@ -172,5 +192,5 @@
   document.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.view)));
   $("worldFlowType").addEventListener("change",drawWorld);
   window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();if(mode==="globe")drawLiveEarth();if(mode==="world")drawWorld();});
-  window.addEventListener("resize",()=>{if(mode==="map"&&map)map.invalidateSize();if((mode==="globe"||mode==="world")&&globe)globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);});
+  window.addEventListener("resize",()=>{if(mode==="map"&&map)map.invalidateSize();if((mode==="globe"||mode==="world")&&globe)globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);if(backdropGlobe)backdropGlobe.width(window.innerWidth).height(window.innerHeight);});
 })();
