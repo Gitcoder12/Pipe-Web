@@ -3,18 +3,66 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#080b0e">
+  <meta name="theme-color" content="#0a0a0a">
   <meta name="description" content="Pipe-Web — a global intelligence system for discovering the fastest paths through connected networks.">
-  <title>Pipe-Web — The World in Flow</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Pipe-Web — Live Global Movement</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=20261118b">
+  <link rel="stylesheet" href="styles.css?v=globe-first-1">
 </head>
 <body>
 <div id="earthBackdrop" aria-hidden="true"></div>
 <div class="ambient-grain" aria-hidden="true"></div>
+
+<div id="landingRoot" class="landing-root">
+  <div id="liveGlobe" class="live-globe" aria-label="Live global ship positions"></div>
+  <div id="liveMap" class="live-map" aria-label="Live ship positions on a 2D map" hidden></div>
+  <div class="landing-vignette" aria-hidden="true"></div>
+  <header class="landing-top glass">
+    <div class="landing-brand-group">
+      <button id="menuToggle" class="landing-icon" aria-label="Open navigation" aria-expanded="false">☰</button>
+      <a class="landing-brand" href="#/" aria-label="Pipe-Web home">Pipe-Web</a>
+    </div>
+    <div class="landing-actions">
+      <button id="viewToggle" class="landing-control" type="button" aria-label="Switch globe view">🌐 <span>3D</span></button>
+      <button id="screenshotBtn" class="landing-control" type="button" aria-label="Take screenshot">📷 <span>Screenshot</span></button>
+      <button id="settingsToggle" class="landing-control" type="button" aria-label="Open settings" aria-expanded="false">⚙️ <span>Settings</span></button>
+    </div>
+  </header>
+  <nav id="landingMenu" class="landing-popover glass" aria-label="Pipe-Web navigation" hidden>
+    <a href="#/route-planner">Route planner</a>
+    <a href="#/corridors">Corridors</a>
+    <a href="#/bottlenecks">Bottlenecks</a>
+    <a href="#/sankey">Flow explorer</a>
+    <a href="#/statistics">Statistics</a>
+  </nav>
+  <section id="landingSettings" class="landing-settings glass" hidden>
+    <strong>Settings</strong>
+    <label><input id="tiltToggle" type="checkbox"> Enable phone tilt navigation</label>
+    <p>On mobile, tilt gently pans the 2D map. Motion access may require permission.</p>
+    <span id="airLayerNote">Aircraft layer is unavailable until an aircraft Worker endpoint is configured.</span>
+  </section>
+  <div class="landing-bottom">
+    <div id="layerTray" class="layer-tray glass" aria-label="Map layers">
+      <button class="layer-pill active" data-layer="sea" aria-pressed="true">Sea</button>
+      <button class="layer-pill" data-layer="road" aria-pressed="false">Road</button>
+      <button class="layer-pill" data-layer="air" aria-pressed="false">Air</button>
+      <button class="layer-pill" data-layer="rail" aria-pressed="false">Rail</button>
+      <button class="layer-pill" data-layer="pipe" aria-pressed="false">Pipe</button>
+      <button class="layer-pill" data-layer="digital" aria-pressed="false">Digital</button>
+    </div>
+    <div class="live-status glass" role="status" aria-live="polite">
+      <span id="feedPulse" class="feed-pulse"></span>
+      <span id="liveCounts">Connecting to live feed…</span>
+    </div>
+  </div>
+  <div id="layerSheetBackdrop" class="layer-sheet-backdrop" hidden></div>
+  <div id="layerSheet" class="layer-sheet glass" hidden>
+    <div class="sheet-handle"></div><strong>Layers</strong>
+    <div id="mobileLayerButtons"></div>
+  </div>
+  <div id="landingToast" class="landing-toast" role="status" aria-live="polite"></div>
+</div>
+<div id="legacyWorkspace" class="legacy-workspace" aria-hidden="true">
 <div class="app-shell">
   <header class="site-header">
     <a class="brand" href="#" aria-label="Pipe-Web home">
@@ -181,6 +229,8 @@
     <footer class="site-footer"><a class="footer-brand" href="#">PIPE<span>WEB</span></a><span>THE WORLD IS CONNECTED. FIND THE WAY THROUGH.</span><span>© 2026 PIPE-WEB</span></footer>
   </main>
 </div>
+
+</div>
 <div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://unpkg.com/globe.gl"></script>
@@ -188,5 +238,6 @@
   <script src="src/osm/cache.js"></script>
   <script src="src/osm/overpass.js"></script><script src="app.js"></script><script src="geo-view.js"></script><script src="src/feeds/recorder.js"></script><script src="src/feeds/maritime.js"></script>
 <script src="flow-explorer.js"></script>
+<script src="src/ui/landing.js"></script>
 </body>
 </html>
