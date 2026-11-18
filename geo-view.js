@@ -41,27 +41,39 @@
     }).addTo(map);
   }
   function drawMap() {
-    const s = state(); if (!s || !map) return;
-    mapLayers.forEach(layer => map.removeLayer(layer)); mapLayers = [];
-    const nodes = Object.fromEntries(s.network.nodes.map(n => [n[0], { raw:n, ...nodeCoords(n) }]));
-    const chosen = s.paths[s.selected] || s.paths[0];
-    s.network.edges.forEach(e => {
-      const a=nodes[e[0]], b=nodes[e[1]];
-      const isBest=chosen && chosen.edges.includes(e);
-      const layer=L.polyline([[a.lat,a.lng],[b.lat,b.lng]], {
-        color:isBest?"#20b981":(s.network.congested.includes([e[0],e[1]].sort().join("-"))?"#c88752":"#8293a8"),
-        weight:isBest?6:3, opacity:isBest?0.95:0.55, dashArray:isBest?null:"5 7"
+    const s=state(); if(!s||!map) return;
+    mapLayers.forEach(layer=>map.removeLayer(layer));mapLayers=[];
+    const nodes=Object.fromEntries(s.network.nodes.map(n=>[n[0],{raw:n,...nodeCoords(n)}]));
+    s.network.edges.forEach(e=>{
+      const a=nodes[e[0]],b=nodes[e[1]],key=[e[0],e[1]].sort().join("-");
+      const layer=L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{
+        color:s.network.congested.includes(key)?"#8e6346":"#64748b",
+        weight:2,opacity:0.42,dashArray:"3 7"
       }).addTo(map);
-      layer.bindTooltip(e[0]+" → "+e[1]); mapLayers.push(layer);
+      layer.bindTooltip(e[0]+" ↔ "+e[1]);mapLayers.push(layer);
     });
-    s.network.nodes.forEach(n => {
-      const p=nodes[n[0]], isOrigin=n[0]===s.origin, isDest=n[0]===s.destination;
+    const rankColors=["#35d39a","#e8b94e","#ef6262"];
+    (s.paths||[]).forEach((path,index)=>{
+      const color=rankColors[Math.min(index,2)],selected=index===s.selected;
+      path.edges.forEach(e=>{
+        const a=nodes[e[0]],b=nodes[e[1]];
+        const line=L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{
+          color,weight:selected?7:4,opacity:selected?1:0.78,
+          lineCap:"round",lineJoin:"round",className:"pipeweb-route-flow"
+        }).addTo(map);
+        line.bindTooltip((index===0?"FASTEST":index===1?"MEDIUM":"SLOWEST")+" · "+e[0]+" → "+e[1]);
+        mapLayers.push(line);
+      });
+    });
+    s.network.nodes.forEach(n=>{
+      const p=nodes[n[0]],isOrigin=n[0]===s.origin,isDest=n[0]===s.destination;
       const marker=L.circleMarker([p.lat,p.lng],{radius:isOrigin||isDest?8:5,color:isOrigin?"#e5b66c":isDest?"#67c9e8":"#d7e2ee",fillColor:isOrigin?"#e5b66c":isDest?"#67c9e8":"#26394e",fillOpacity:1,weight:2}).addTo(map);
-      marker.bindPopup("<b>"+n[0]+" · "+n[1]+"</b><br>"+(Number.isFinite(n[4])?"Imported geographic network node":"Illustrative demo node")+"<br>"+p.lat.toFixed(5)+", "+p.lng.toFixed(5)); mapLayers.push(marker);
+      marker.bindPopup("<b>"+n[0]+" · "+n[1]+"</b><br>"+(Number.isFinite(n[4])?"Imported geographic network node":"Illustrative demo node")+"<br>"+p.lat.toFixed(5)+", "+p.lng.toFixed(5));mapLayers.push(marker);
     });
-    if(mapLayers.length){const bounds=L.featureGroup(mapLayers).getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(0.12),{maxZoom:16})}
-    $("geoMap").setAttribute("aria-label","Interactive geographic visualization of the network");
+    if(mapLayers.length){const bounds=L.featureGroup(mapLayers).getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(0.12),{maxZoom:16});}
+    $("geoMap").setAttribute("aria-label","Interactive geographic visualization with fastest, medium and slow route alternatives");
   }
+  
   function ensureGlobe() {
     if (globeReady || !window.Globe) return;
     globeReady=true;
@@ -88,14 +100,21 @@
     $("worldDescription").textContent=layer.description+" Not live traffic or infrastructure telemetry.";
   }
   function drawGlobe() {
-    const s=state(); if(!s||!globe) return;
+    const s=state();if(!s||!globe)return;
     const nodes=Object.fromEntries(s.network.nodes.map(n=>[n[0],{raw:n,...nodeCoords(n)}]));
-    const points=s.network.nodes.map(n=>{const p=nodes[n[0]];return {lat:p.lat,lng:p.lng,color:n[0]===s.origin?"#e5b66c":n[0]===s.destination?"#67c9e8":"#b8c9dc",label:n[0]+" · "+n[1]}});
-    const chosen=s.paths[s.selected]||s.paths[0];
-    const arcs=chosen?chosen.edges.map(e=>({startLat:nodes[e[0]].lat,startLng:nodes[e[0]].lng,endLat:nodes[e[1]].lat,endLng:nodes[e[1]].lng,color:"#69e0ad"})):[];
-    globe.pointsData(points).pointLabel("label").arcsData(arcs);
+    const points=s.network.nodes.map(n=>{const p=nodes[n[0]];return{lat:p.lat,lng:p.lng,color:n[0]===s.origin?"#e5b66c":n[0]===s.destination?"#67c9e8":"#b8c9dc",label:n[0]+" · "+n[1]};});
+    const rankColors=["#35d39a","#e8b94e","#ef6262"];
+    const arcs=[];
+    (s.paths||[]).forEach((path,index)=>path.edges.forEach(e=>arcs.push({
+      startLat:nodes[e[0]].lat,startLng:nodes[e[0]].lng,
+      endLat:nodes[e[1]].lat,endLng:nodes[e[1]].lng,
+      color:rankColors[Math.min(index,2)],selected:index===s.selected
+    })));
+    globe.pointsData(points).pointLabel("label").arcsData(arcs)
+      .arcColor(d=>d.color).arcStroke(d=>d.selected?1.1:0.65);
     globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
   }
+  
   document.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.view)));
   $("worldFlowType").addEventListener("change",drawWorld);
   window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();if(mode==="globe")drawGlobe();if(mode==="world")drawWorld();});
