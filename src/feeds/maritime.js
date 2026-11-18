@@ -7,7 +7,7 @@
   class MaritimeFeed {
     constructor() {
       this.ws = null; this.ships = new Map(); this.listeners = new Set();
-      this.timer = null; this.reconnectTimer = null; this.retry = 0;
+      this.flushTimer = null; this.reconnectTimer = null; this.retry = 0;
       this.active = false; this.intentionalClose = false; this.lastMessageAt = 0;
       this.status = "DISCONNECTED";
     }
@@ -43,12 +43,11 @@
         this.ws.onerror = () => { if (this.active) { this.status = "ERROR"; this.emit(); } };
         this.ws.onclose = () => { this.ws = null; if (this.active && !this.intentionalClose) this.scheduleReconnect(); };
       } catch (_) { this.scheduleReconnect(); }
-      if (!this.timer) this.timer = setInterval(() => {
+      if (!this.flushTimer) this.flushTimer = setInterval(() => {
         const cutoff = Date.now() - STALE_MS;
         for (const [id, ship] of this.ships) if (ship.receivedAt < cutoff) this.ships.delete(id);
         this.emit();
       }, FLUSH_MS);
-      if (!this.flushTimer) this.flushTimer = setInterval(() => this.emit(), FLUSH_MS);
     }
     scheduleReconnect() {
       if (!this.active || this.reconnectTimer) return;
@@ -61,8 +60,8 @@
       if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
       if (this.ws) { const ws = this.ws; this.ws = null; ws.onclose = null; ws.close(); }
-      if (this.timer) clearInterval(this.timer); if (this.flushTimer) clearInterval(this.flushTimer);
-      this.timer = this.flushTimer = null;
+      if (this.flushTimer) clearInterval(this.flushTimer);
+      this.flushTimer = null;
       if (clear) this.ships.clear();
       this.status = "DISCONNECTED"; this.emit();
     }
