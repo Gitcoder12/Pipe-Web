@@ -112,6 +112,17 @@
     globe.controls().autoRotate=true; globe.controls().autoRotateSpeed=0.35;
   }
   function drawWorld() {
+    if($("worldFlowType").value==="maritime"&&window.PipeWebMaritime){
+      const feed=window.PipeWebMaritime.snapshot(),ships=feed.ships||[];
+      if(ships.length){
+        globe.pointsData(ships.map(s=>({lat:s.lat,lng:s.lon,color:s.sog>15?"#e7b96c":s.sog>5?"#65d5b0":"#70b9ee",label:(s.name||"Vessel "+s.mmsi)+" · "+(s.sog==null?"speed n/a":s.sog.toFixed(1)+" kn")}))).pointLabel("label").arcsData([]);
+        globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
+        $("networkName").textContent="LIVE MARITIME POSITIONS · OPENSEAFEED";
+        $("nodeCount").textContent=ships.length.toLocaleString()+" OBSERVED VESSELS";
+        $("worldDescription").textContent="Live AIS position reports. Coverage varies by receiver network; vessel positions are not cargo or trade-volume data.";
+        return;
+      }
+    }
     const layer=worldLayers[$("worldFlowType").value]||worldLayers.air;
     const hubs=layer.hubs.map(([name,lat,lng])=>({name,lat,lng}));
     const byName=Object.fromEntries(hubs.map(h=>[h.name,h]));
@@ -192,5 +203,6 @@
   document.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.view)));
   $("worldFlowType").addEventListener("change",drawWorld);
   window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();if(mode==="globe")drawLiveEarth();if(mode==="world")drawWorld();});
+  if(window.PipeWebMaritime)window.PipeWebMaritime.subscribe(()=>{if(mode==="world"&&$("worldFlowType").value==="maritime")drawWorld();});
   window.addEventListener("resize",()=>{if(mode==="map"&&map)map.invalidateSize();if((mode==="globe"||mode==="world")&&globe)globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);if(backdropGlobe)backdropGlobe.width(window.innerWidth).height(window.innerHeight);});
 })();
