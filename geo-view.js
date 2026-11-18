@@ -5,8 +5,8 @@
   const center = { lat: 16.5062, lng: 80.6480 };
   let mode = "schematic", map = null, globe = null, mapLayers = [], globeReady = false;
   const nodeCoords = (node) => ({
-    lat: center.lat + (220 - node[3]) * 0.00019,
-    lng: center.lng + (node[2] - 450) * 0.00022
+    lat: Number.isFinite(node[4]) ? node[4] : center.lat + (220 - node[3]) * 0.00019,
+    lng: Number.isFinite(node[5]) ? node[5] : center.lng + (node[2] - 450) * 0.00022
   });
   function state(){ return window.PipeWeb ? window.PipeWeb.getState() : null; }
   function setMode(next) {
@@ -44,7 +44,8 @@
       const marker=L.circleMarker([p.lat,p.lng],{radius:isOrigin||isDest?8:5,color:isOrigin?"#e5b66c":isDest?"#67c9e8":"#d7e2ee",fillColor:isOrigin?"#e5b66c":isDest?"#67c9e8":"#26394e",fillOpacity:1,weight:2}).addTo(map);
       marker.bindPopup("<b>"+n[0]+" · "+n[1]+"</b><br>Illustrative demo node"); mapLayers.push(marker);
     });
-    $("geoMap").setAttribute("aria-label","Interactive geographic visualization of the simulated network");
+    if(mapLayers.length){const bounds=L.featureGroup(mapLayers).getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(0.12),{maxZoom:16})}
+    $("geoMap").setAttribute("aria-label","Interactive geographic visualization of the network");
   }
   function ensureGlobe() {
     if (globeReady || !window.Globe) return;
