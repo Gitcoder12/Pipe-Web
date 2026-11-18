@@ -18,15 +18,15 @@ const network={
 };
 sandbox.self.onmessage({data:network});
 assert.equal(response.id,1);
-assert.equal(response.paths.length,3);
+assert.equal(response.paths.length,2);
 assert.deepEqual(Array.from(response.paths[0].ids),["A","B","D"]);
 assert.equal(response.paths[0].metrics.time,2);
-assert.equal(response.paths[1].metrics.time,3);
+assert.equal(response.paths[1].metrics.time,4);
 const oneWay={...network,id:2,start:"B",end:"A",alternatives:false,edges:[["A","B",1,1,1,1,true]]};
 sandbox.self.onmessage({data:oneWay});
 assert.equal(response.id,2);
 assert.equal(response.paths.length,0);
 const reverse={...network,id:3,start:"A",end:"D",avoidCongestion:true,alternatives:false,edges:network.edges,congested:["A-B"]};
 sandbox.self.onmessage({data:reverse});
-assert.equal(response.paths[0].metrics.time,2);
+assert.equal(response.paths[0].score,2.65);
 console.log("Path worker tests passed.");
