@@ -148,3 +148,17 @@ The **World flows** view is a global, interactive 3D globe with selectable illus
 Each layer plots named hubs across multiple continents and draws animated arcs between them. This global visualization mode does not depend on importing a local road network. The hub-to-hub connections are conceptual examples for exploring the visual system; they are **not** a verified map of actual airline schedules, submarine cables, shipping tracks, power interconnectors, or live traffic.
 
 Use **World flows** in the view switch, then change the global flow layer. The existing **2D Map** and **3D Globe** views continue to show the currently loaded local/imported network. A future data-adapter milestone can replace illustrative layers with attributed, validated global datasets and timestamps.
+
+
+## Live data: free first, paid optional
+
+Pipe-Web's live-data policy and source inventory are documented in [LIVE-DATA.md](LIVE-DATA.md). The first free live adapter is an optional Cloudflare Worker proxy for anonymous OpenSky aircraft positions:
+
+- Deploy `workers/live-api.js` as a Cloudflare Worker and route `/api/aircraft` to it.
+- It normalizes aircraft positions and caches the global response for 15 minutes to respect OpenSky's anonymous quota (400 credits/day; a global request costs 4 credits).
+- It requires no API secret. Coverage is incomplete and the feed must not be described as every aircraft worldwide.
+- The static app remains usable without deploying the worker; the current World flows are illustrative until a live feed is connected and verified.
+
+AISStream offers a free live AIS feed but requires a server-side API key and backend WebSocket proxy; direct browser connections are not permitted. We will keep that integration optional and never expose its key in frontend code. Commercial AIS, higher-rate aircraft, live traffic and operational internet / energy telemetry are listed as paid or approval-required upgrades where applicable.
+
+**Data integrity rule:** every real-time layer must display its provider, timestamp, connection state and coverage caveats. Simulated connections remain labelled illustrative.
