@@ -45,6 +45,7 @@
               cog: Number.isFinite(cog) ? cog : null, name: meta.ShipName || p.Name || "",
               shipType: meta.ShipType ?? null, time: meta.time_utc || new Date().toISOString(), receivedAt: Date.now() });
             this.lastMessageAt = Date.now();
+            if (window.PipeWebRecorder) window.PipeWebRecorder.record("ship", this.ships.get(mmsi)).catch(() => {});
           } catch (_) { /* Ignore malformed provider frames. */ }
         };
         this.ws.onerror = () => { if (this.active) { this.status = "ERROR"; this.emit(); } };
