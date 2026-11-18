@@ -5,7 +5,7 @@
   <meta name="theme-color" content="#090d16"><meta name="description" content="Pipe-Web — discover, compare and visualize optimal flow paths across connected networks.">
   <title>Pipe-Web — Path Intelligence</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""><link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="app-shell">
@@ -22,7 +22,7 @@
       <button class="domain" data-domain="data"><i class="dot data"></i>Data network</button>
       <button class="domain" data-domain="robot"><i class="dot robot"></i>Robot navigation</button>
     </div>
-    <div class="sidebar-bottom"><div class="live-indicator"><span></span> SIMULATION ONLINE</div><p>Local demo network<br>All metrics are simulated.</p><span class="version">PIPE-WEB / 0.1.0</span></div>
+    <div class="sidebar-bottom"><div class="live-indicator"><span></span> NETWORK READY</div><p>Demo presets + imported geographic networks.</p><span class="version">PIPE-WEB / 0.1.0</span></div>
   </aside>
   <main class="main">
     <header class="topbar"><div><div class="eyebrow">PATH INTELLIGENCE / EXPLORER</div><h1>Find the <em>best path.</em></h1><p class="subhead">See how flow moves. Understand why a route wins.</p></div><div class="top-actions"><span class="system-status"><i></i> ENGINE READY</span><button class="icon-btn" id="resetBtn" title="Reset network">↺</button></div></header>
@@ -34,12 +34,14 @@
         <label>OPTIMIZE FOR<select id="objective"><option value="time">Fastest time</option><option value="distance">Shortest distance</option><option value="cost">Lowest cost</option><option value="energy">Lowest energy</option></select></label>
         <button id="findBtn" class="primary-btn">Find optimal paths <span>↗</span></button>
       </div>
-      <div class="advanced-row"><label class="check-label"><input type="checkbox" id="avoidCongestion" checked> Avoid congested segments</label><label class="check-label"><input type="checkbox" id="showAlternatives" checked> Show alternatives</label><span class="hint">Demo data · deterministic network</span></div>
+      <div class="import-row"><label class="import-label">LOAD REAL NETWORK <input id="networkFile" type="file" accept=".geojson,.json,.gpx,application/geo+json,application/gpx+xml"></label><label class="place-label">OR SEARCH AN AREA <input id="placeSearch" type="search" placeholder="e.g. Vijayawada, India"></label><button id="loadOsmBtn" class="small-btn">Load OSM roads ↗</button><span id="importStatus" class="import-status">Import GeoJSON / GPX or fetch real road geometry</span></div><div class="advanced-row"><label class="check-label"><input type="checkbox" id="avoidCongestion" checked> Avoid congested segments</label><label class="check-label"><input type="checkbox" id="showAlternatives" checked> Show alternatives</label><span class="hint">Demo data · deterministic network</span></div>
     </section>
     <section class="visual-section">
       <div class="section-title"><div><span class="step">02</span><strong>Live flow map</strong><span class="muted inline-muted"> / Network topology</span></div><div class="map-tools"><span class="legend"><i class="legend-line optimal"></i> Optimal</span><span class="legend"><i class="legend-line alternate"></i> Alternative</span><button id="animateBtn" class="small-btn">Ⅱ Pause flow</button></div></div>
       <div class="map-panel panel">
         <div class="map-meta"><span id="networkName">METRO / URBAN ROAD NETWORK</span><span id="nodeCount">12 NODES · 19 LINKS</span></div>
+        <div class="view-switch" role="group" aria-label="Visualization mode"><button class="view-btn active" data-view="schematic">Schematic</button><button class="view-btn" data-view="map">2D Map</button><button class="view-btn" data-view="globe">3D Globe</button></div>
+        <div id="geoMap" class="geo-view" hidden></div><div id="geoGlobe" class="geo-view globe-view" hidden></div>
         <svg id="networkMap" viewBox="0 0 900 440" role="img" aria-label="Interactive network diagram showing origin, destination and optimized flow paths"></svg>
         <div class="map-footer"><span><b class="origin-key"></b> Origin <b class="destination-key"></b> Destination</span><span id="mapHint">Select a route and run optimization</span><span class="mono">SCHEMATIC VIEW · NOT TO SCALE</span></div>
       </div>
@@ -52,5 +54,7 @@
   </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/globe.gl"></script>
+<script src="app.js"></script><script src="geo-view.js"></script>
 </body></html>

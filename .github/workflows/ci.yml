@@ -20,11 +20,15 @@ jobs:
         with:
           node-version: 22
       - name: Validate JavaScript syntax
-        run: node --check app.js
+        run: |
+          node --check app.js
+          node --check geo-view.js
       - name: Verify application entry points
         run: |
           test -s index.html
           test -s styles.css
           test -s app.js
+          test -s geo-view.js
           grep -q 'href="styles.css"' index.html
           grep -q 'src="app.js"' index.html
+          grep -q 'src="geo-view.js"' index.html
