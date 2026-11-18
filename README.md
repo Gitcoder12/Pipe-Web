@@ -97,3 +97,28 @@ MIT. See [LICENSE](LICENSE).
 - Comparing flow paths through a fluid pipeline
 - Routing data through a network while balancing time, cost, and energy
 - Navigating a robot grid around blocked cells
+
+
+## Geospatial visualization milestone
+
+The geospatial visualization layer adds three interchangeable views over the same path graph:
+
+- **Schematic:** the original topology view.
+- **2D Map:** an interactive Leaflet map with zoom, pan, node markers and route polylines.
+- **3D Globe:** an interactive globe with network nodes and animated route arcs.
+
+The current demo projects its schematic node layout into an illustrative coordinate area around Vijayawada so the map and globe can be exercised immediately. These are synthetic demonstration coordinates, **not surveyed infrastructure, actual roads, live traffic, or operational pipeline locations**. OpenStreetMap tiles are used only as geographic visual context and are attributed in the map.
+
+The visualization layer is isolated in `geo-view.js`; route computation remains in the existing graph engine. Both geographic views respond to domain changes and route selection.
+
+### Run and network requirements
+
+Open the app through a local static server as described above. The geographic views load Leaflet, Globe.gl and map tiles from their respective CDNs, so an internet connection is required for those views. The schematic explorer remains the local fallback.
+
+### Next geospatial milestones
+
+1. Import real GeoJSON / OpenStreetMap road graphs and preserve source attribution.
+2. Add coordinate-aware graph routing rather than projecting schematic coordinates.
+3. Support user-imported GeoJSON, GPX and network datasets.
+4. Add globe-to-map transitions, route elevation and time-aware flow playback.
+5. Add domain adapters for real transport, utility and data-network feeds.
