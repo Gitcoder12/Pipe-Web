@@ -1,0 +1,14 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const html = fs.readFileSync("index.html", "utf8");
+const ui = fs.readFileSync("src/ui/landing.js", "utf8");
+assert.match(html, /id="liveGlobe"/);
+assert.match(html, /id="layerTray"/);
+assert.match(html, /id="liveCounts"/);
+assert.match(html, /id="legacyWorkspace"/);
+assert.match(html, /src="src\/ui\/landing.js"/);
+assert.match(ui, /PipeWebMaritime/);
+assert.match(ui, /Connecting to live feed/);
+assert.match(ui, /pointLabel/);
+assert.doesNotMatch(ui, /1,247 ships|3,412 aircraft/);
+console.log("Landing tests passed: globe-first shell, legacy workspace, live feed wiring and honest counts.");
