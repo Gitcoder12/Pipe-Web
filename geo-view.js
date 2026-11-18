@@ -4,7 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const center = { lat: 16.5062, lng: 80.6480 };
   let mode = "schematic", map = null, globe = null, mapLayers = [], globeReady = false;
-  const AIRCRAFT_API = "https://opensky-network.org/api/states/all";
+  const AIRCRAFT_API = (window.PIPEWEB_CONFIG && window.PIPEWEB_CONFIG.aircraftApi) || "https://opensky-network.org/api/states/all";
   const AIRCRAFT_REFRESH_MS = 15 * 60 * 1000;
   let aircraftCache = [], aircraftFetchedAt = 0, aircraftBusy = false, aircraftTimer = null;
   const worldLayers = {
@@ -125,12 +125,12 @@
     try{
       const response=await fetch(AIRCRAFT_API,{headers:{accept:"application/json"},cache:"no-store"});
       if(!response.ok)throw new Error("OpenSky returned HTTP "+response.status);
-      const payload=await response.json(),states=Array.isArray(payload.states)?payload.states:[];
-      const parsed=[];
-      for(const v of states){
-        if(!Number.isFinite(v[5])||!Number.isFinite(v[6]))continue;
-        parsed.push({icao24:v[0],callsign:(v[1]||"").trim(),originCountry:v[2],longitude:v[5],latitude:v[6],altitudeM:Number.isFinite(v[7])?v[7]:null,onGround:Boolean(v[8]),velocityMs:Number.isFinite(v[9])?v[9]:null,headingDeg:Number.isFinite(v[10])?v[10]:null});
-      }
+      const payload=await response.json();
+      const parsed=Array.isArray(payload.aircraft)?payload.aircraft.filter(a=>Number.isFinite(a.longitude)&&Number.isFinite(a.latitude)):((Array.isArray(payload.states)?payload.states:[]).flatMap(v=>{
+        if(!Number.isFinite(v[5])||!Number.isFinite(v[6]))return [];
+        return [{icao24:v[0],callsign:(v[1]||"").trim(),originCountry:v[2],longitude:v[5],latitude:v[6],altitudeM:Number.isFinite(v[7])?v[7]:null,onGround:Boolean(v[8]),velocityMs:Number.isFinite(v[9])?v[9]:null,headingDeg:Number.isFinite(v[10])?v[10]:null}];
+      }));
+      if(payload.status==="OFFLINE")throw new Error(payload.error||"Aircraft provider offline");
       aircraftCache=parsed;aircraftFetchedAt=Date.now();renderAircraft();
       $("aircraftCount").textContent=parsed.length.toLocaleString();
       $("aircraftUpdated").textContent=new Date(aircraftFetchedAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
