@@ -154,15 +154,33 @@
   }
   function activateNetwork(network,label){domains.custom=network;domain="custom";paths=[];document.querySelectorAll(".domain").forEach(b=>b.classList.remove("active"));populateSelects();renderMap();renderResults();$("mapHint").textContent="Geographic network loaded · choose endpoints and optimize";$("resultCount").textContent="READY TO OPTIMIZE";$("importStatus").textContent=label+" · "+network.nodes.length.toLocaleString()+" nodes / "+network.edges.length.toLocaleString()+" links";toast("Network loaded. Choose endpoints and find paths.");}
   $("networkFile").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;try{const text=await file.text(),network=file.name.toLowerCase().endsWith(".gpx")?parseGpx(text,file.name):parseGeoJson(JSON.parse(text),file.name);activateNetwork(network,"Imported "+file.name)}catch(err){$("importStatus").textContent=err.message||"Import failed";toast(err.message||"Could not import network.")}finally{e.target.value=""}});
-  $("loadOsmBtn").addEventListener("click",async()=>{const place=$("placeSearch").value.trim();if(!place){toast("Enter a place or area first.");return}const button=$("loadOsmBtn");button.disabled=true;button.textContent="Loading…";$("importStatus").textContent="Geocoding area and downloading road graph…";try{
-    const g=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q="+encodeURIComponent(place),{headers:{Accept:"application/json"}});if(!g.ok)throw new Error("Geocoding service unavailable ("+g.status+").");const found=await g.json();if(!found.length)throw new Error("Place not found. Try a more specific search.");
-    const lat=Number(found[0].lat),lng=Number(found[0].lon),south=lat-0.035,north=lat+0.035,west=lng-0.04,east=lng+0.04,query='[out:json][timeout:25];way["highway"]('+south+','+west+','+north+','+east+');(._;>;);out body;';
-    const response=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:"data="+encodeURIComponent(query)});if(!response.ok)throw new Error("OpenStreetMap service unavailable ("+response.status+"). Retry later or import GeoJSON.");
-    const data=await response.json(),osmNodes=new Map(),ways=[];data.elements.forEach(el=>{if(el.type==="node")osmNodes.set(el.id,{lat:el.lat,lng:el.lon});else if(el.type==="way")ways.push(el)});
-    const coords=new Map(),links=new Map();ways.forEach(way=>{let prev=null;way.nodes.forEach(id=>{const p=osmNodes.get(id);if(!p)return;const key=String(id);if(!coords.has(key))coords.set(key,{key,lat:p.lat,lng:p.lng,name:"OSM "+id});if(prev){const props=way.tags||{},linkId=[prev,key].sort().join("|");if(!links.has(linkId))links.set(linkId,{a:prev,b:key,props:{highway:props.highway,maxspeed:props.maxspeed,oneway:["yes","1","-1"].includes(props.oneway),reverse:props.oneway==="-1"}})}prev=key})});
-    if(coords.size<2)throw new Error("No road graph found in this area. Try another location.");
-    const network=finalizeNetwork(coords,links,"OpenStreetMap / "+(found[0].name||place));activateNetwork(network,"OpenStreetMap · "+(found[0].name||place));$("importStatus").textContent+=" · © OpenStreetMap contributors";
-  }catch(err){$("importStatus").textContent=err.message||"OSM download failed";toast(err.message||"Could not load OSM roads.")}finally{button.disabled=false;button.textContent="Load OSM roads ↗"}});
+  $("loadOsmBtn").addEventListener("click",async()=>{
+    const place=$("placeSearch").value.trim();if(!place){toast("Enter a place or area first.");return}
+    const button=$("loadOsmBtn");button.disabled=true;button.textContent="Loading…";$("importStatus").textContent="Geocoding area…";
+    try{
+      const g=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q="+encodeURIComponent(place),{headers:{Accept:"application/json"}});
+      if(!g.ok)throw Error("Geocoding service unavailable ("+g.status+").");
+      const found=await g.json();if(!found.length)throw Error("Place not found. Try a more specific search.");
+      const lat=Number(found[0].lat),lng=Number(found[0].lon);
+      const requested=[lat-.035,lng-.04,lat+.035,lng+.04];
+      if(!window.PipeWebOverpass)throw Error("OSM loader did not initialize. Refresh the page.");
+      const result=await window.PipeWebOverpass.fetchGraph(requested);
+      if(result.error)throw Error(result.error);
+      if(result.clamped)toast("Area narrowed to a smaller region. Zoom in for full detail.");
+      const data=result.graph,osmNodes=new Map(),ways=[];
+      data.elements.forEach(el=>{if(el.type==="node")osmNodes.set(el.id,{lat:el.lat,lng:el.lon});else if(el.type==="way")ways.push(el);});
+      const coords=new Map(),links=new Map();
+      ways.forEach(way=>{let prev=null;way.nodes.forEach(id=>{const p=osmNodes.get(id);if(!p)return;const key=String(id);if(!coords.has(key))coords.set(key,{key,lat:p.lat,lng:p.lng,name:"OSM "+id});if(prev){const props=way.tags||{},linkId=[prev,key].sort().join("|");if(!links.has(linkId))links.set(linkId,{a:prev,b:key,props:{highway:props.highway,maxspeed:props.maxspeed,oneway:["yes","1","-1"].includes(props.oneway),reverse:props.oneway==="-1"}});}prev=key;});});
+      if(coords.size<2)throw Error("No road graph found in this area. Try another location.");
+      const network=finalizeNetwork(coords,links,"OpenStreetMap / "+(found[0].name||place));
+      activateNetwork(network,"OpenStreetMap · "+(found[0].name||place));
+      const date=new Date(result.ts||Date.now()).toLocaleDateString();
+      $("importStatus").textContent+=" · © OpenStreetMap contributors · "+(result.stale?"STALE CACHE · ":"CACHE · ")+(result.cached?"Data as of "+date:result.clamped?"Area limited":"Fresh data");
+      if(result.stale)toast("Connection unavailable. Showing cached OSM data from "+date+".");
+      else if(result.cached)toast("Loaded cached road data instantly.");
+    }catch(err){$("importStatus").textContent=err.message||"OSM download failed";toast(err.message||"Could not load OSM roads.");}
+    finally{button.disabled=false;button.textContent="Load OSM roads ↗";}
+  });
 
   window.PipeWeb={getState:()=>({domain,network:domains[domain],paths,selected,objective:$("objective").value,origin:$("origin").value,destination:$("destination").value})};
   populateSelects();updateRankLegend();renderMap();renderResults();
