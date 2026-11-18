@@ -45,7 +45,7 @@ python -m http.server 8000
 
 Open http://localhost:8000.
 
-The schematic view works locally. Map tiles, the 3D globe assets, geocoding and OpenStreetMap downloads require an internet connection. Route search runs in `workers/path-worker.js`, keeping Dijkstra calculations off the UI thread. Imported networks support up to 100,000 nodes; map rendering can still be the limiting factor for very large graphs.
+The schematic view works locally. Map tiles, the 3D globe assets, geocoding and OpenStreetMap downloads require an internet connection. Route search runs in `workers/path-worker.js`, keeping A* calculations off the UI thread. Imported networks support up to 100,000 nodes; map rendering can still be the limiting factor for very large graphs.
 
 ## Views
 
@@ -72,7 +72,7 @@ See [LIVE-DATA.md](LIVE-DATA.md) for the free-first data-source inventory, worki
 | `index.html` | Application structure and controls |
 | `config.js` | Public data endpoint configuration (no secrets) |
 | `styles.css` | Responsive interface, route palette and motion |
-| `app.js` | Graph data, route UI, ranking and schematic rendering |\n| `workers/path-worker.js` | Off-main-thread Dijkstra search and alternative-path calculation |
+| `app.js` | Graph data, route UI, ranking and schematic rendering |\n| `workers/path-worker.js` | Off-main-thread A* search and alternative-path calculation |
 | `geo-view.js` | Leaflet map and Globe.gl visualization |
 | `LIVE-DATA.md` | Free and paid data-source inventory, quotas and integrity rules |
 | `workers/live-api.js` | Cached anonymous OpenSky aircraft proxy |
@@ -100,3 +100,8 @@ GitHub Pages is free for public repositories. See the [official deployment guide
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+
+### A* routing
+
+The worker uses an admissible geographic heuristic for distance and time objectives. Cost and energy use a zero heuristic to preserve optimality. Graphs without coordinates safely fall back to Dijkstra behavior. Worker tests cover alternatives, one-way edges, congestion, antimeridian coordinates, disconnected graphs, identical endpoints and a 100,000-node chain.
