@@ -134,3 +134,17 @@ Open the app through a local static server as described above. The geographic vi
 OSM road distances use the haversine formula. Travel-time weights use road-class speed defaults or tagged maxspeed where available; these are estimates, not live traffic ETAs. One-way OSM roads are directed. GeoJSON/GPX estimated time, cost and energy are derived from distance. Public geocoding and Overpass services have usage limits; retry later or import a local file if unavailable. OSM data is © OpenStreetMap contributors. Internet access is required for OSM downloads, map tiles and globe assets.
 
 The shortest-path engine uses a binary min-heap Dijkstra traversal. Alternative paths remain bounded heuristic candidates rather than a complete K-shortest-path guarantee. Networks above 500 nodes are explored in map/globe views rather than the schematic SVG.
+
+ 
+## Planet-scale world visualizer
+
+The **World flows** view is a global, interactive 3D globe with selectable illustrative layers:
+
+- Air connectivity
+- Digital backbone
+- Maritime corridors
+- Energy connections
+
+Each layer plots named hubs across multiple continents and draws animated arcs between them. This global visualization mode does not depend on importing a local road network. The hub-to-hub connections are conceptual examples for exploring the visual system; they are **not** a verified map of actual airline schedules, submarine cables, shipping tracks, power interconnectors, or live traffic.
+
+Use **World flows** in the view switch, then change the global flow layer. The existing **2D Map** and **3D Globe** views continue to show the currently loaded local/imported network. A future data-adapter milestone can replace illustrative layers with attributed, validated global datasets and timestamps.
