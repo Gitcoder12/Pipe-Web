@@ -14,15 +14,57 @@
   const nodeMap=()=>Object.fromEntries(domains[domain].nodes.map(n=>[n[0],{id:n[0],name:n[1],x:n[2],y:n[3],lat:n[4],lng:n[5]}]));
   const edgeId=(a,b)=>[a,b].sort().join("-");
   function metric(edge,obj){return edge[obj==="time"?2:obj==="distance"?3:obj==="cost"?4:5]}
-  function graph(){const g={};domains[domain].nodes.forEach(n=>g[n[0]]=[]);domains[domain].edges.forEach(e=>{g[e[0]].push({to:e[1],edge:e});if(!e[6])g[e[1]].push({to:e[0],edge:e})});return g}
-  class MinHeap{constructor(){this.a=[]}push(v){const a=this.a;a.push(v);let i=a.length-1;while(i){const p=(i-1)>>1;if(a[p].d<=v.d)break;a[i]=a[p];i=p}a[i]=v}pop(){const a=this.a;if(!a.length)return null;const root=a[0],last=a.pop();if(a.length){let i=0;while(true){let l=i*2+1,r=l+1,m=i;if(l<a.length&&a[l].d<a[m].d)m=l;if(r<a.length&&a[r].d<a[m].d)m=r;if(m===i)break;a[i]=a[m];i=m}a[i]=last}return root}get size(){return this.a.length}}
-  function shortestPath(start,end,obj,blocked=new Set(),avoid=true){const g=graph(),dist={},prev={},heap=new MinHeap();Object.keys(g).forEach(k=>dist[k]=Infinity);if(!g[start]||!g[end])return null;dist[start]=0;heap.push({id:start,d:0});while(heap.size){const item=heap.pop(),u=item.id;if(item.d!==dist[u])continue;if(u===end)break;for(const next of g[u]){const key=edgeId(u,next.to);if(blocked.has(key))continue;const congestion=avoid&&domains[domain].congested.includes(key)?1.65:1;const alt=dist[u]+metric(next.edge,obj)*congestion;if(alt<dist[next.to]){dist[next.to]=alt;prev[next.to]={node:u,edge:next.edge};heap.push({id:next.to,d:alt})}}}if(!Number.isFinite(dist[end]))return null;const ids=[end],edges=[];let cur=end;while(cur!==start){const p=prev[cur];if(!p)return null;edges.unshift(p.edge);cur=p.node;ids.unshift(cur)}return{ids,edges,score:dist[end],metrics:sumMetrics(edges)}}
-  function sumMetrics(edges){return{time:edges.reduce((s,e)=>s+e[2],0),distance:edges.reduce((s,e)=>s+e[3],0),cost:edges.reduce((s,e)=>s+e[4],0),energy:edges.reduce((s,e)=>s+e[5],0)}}
-  function findPaths(start,end,obj,avoid,alternatives){const first=shortestPath(start,end,obj,new Set(),avoid);if(!first)return[];const list=[first];if(alternatives){const candidates=new Map(),stride=Math.max(1,Math.ceil(first.edges.length/8));for(let i=0;i<first.edges.length;i+=stride){const blocked=new Set([edgeId(first.ids[i],first.ids[i+1])]);const p=shortestPath(start,end,obj,blocked,avoid);if(p&&p.ids.join("|")!==first.ids.join("|"))candidates.set(p.ids.join("|"),p)}for(let p of candidates.values())list.push(p);list.sort((a,b)=>a.score-b.score);return list.slice(0,3)}return list}
+  // Path search runs in a dedicated worker so large graphs never block map/UI interaction.
+  let pathWorker=null,pathRequestId=0;
+  const pathRequests=new Map();
+  function getPathWorker(){
+    if(pathWorker)return pathWorker;
+    if(!("Worker" in window))throw new Error("This browser does not support Web Workers.");
+    pathWorker=new Worker("workers/path-worker.js");
+    pathWorker.onmessage=event=>{
+      const {id,paths,error}=event.data||{},pending=pathRequests.get(id);
+      if(!pending)return;
+      pathRequests.delete(id);
+      if(error)pending.reject(new Error(error));else pending.resolve(paths||[]);
+    };
+    pathWorker.onerror=event=>{
+      const error=new Error(event.message||"Path worker failed.");
+      pathRequests.forEach(p=>p.reject(error));pathRequests.clear();
+      pathWorker.terminate();pathWorker=null;
+    };
+    return pathWorker;
+  }
+  function findPathsAsync(start,end,obj,avoid,alternatives){
+    return new Promise((resolve,reject)=>{
+      let worker;
+      try{worker=getPathWorker()}catch(error){reject(error);return}
+      const id=++pathRequestId;
+      pathRequests.set(id,{resolve,reject});
+      worker.postMessage({id,start,end,objective:obj,avoidCongestion:avoid,alternatives,
+        nodes:domains[domain].nodes.map(n=>n[0]),
+        edges:domains[domain].edges,
+        congested:domains[domain].congested
+      });
+    });
+  }
   function populateSelects(){const ns=domains[domain].nodes,opts=ns.map(n=>`<option value="${n[0]}">${n[0]} — ${n[1]}</option>`).join("");$("origin").innerHTML=opts;$("destination").innerHTML=opts;$("origin").value=ns[0]?.[0]||"";$("destination").value=ns[ns.length-1]?.[0]||""}
-  function optimize(){const a=$("origin").value,b=$("destination").value;if(a===b){toast("Choose two different endpoints.");return}paths=findPaths(a,b,$("objective").value,$("avoidCongestion").checked,$("showAlternatives").checked);selected=0;renderMap();renderResults();$("mapHint").textContent=paths.length?`${paths.length} viable path(s) · ${labels[$("objective").value].toLowerCase()} route highlighted`:"No route found";$("resultCount").textContent=paths.length?`${paths.length} PATHS FOUND`:"NO PATH FOUND";if(!paths.length)toast("No connected route found.");}
+  async function optimize(){
+    const a=$("origin").value,b=$("destination").value;
+    if(a===b){toast("Choose two different endpoints.");return}
+    const button=$("findBtn"),original=button.textContent;
+    button.disabled=true;button.textContent="CALCULATING IN WORKER…";
+    $("mapHint").textContent="Calculating routes off the main thread…";
+    try{
+      paths=await findPathsAsync(a,b,$("objective").value,$("avoidCongestion").checked,$("showAlternatives").checked);
+      selected=0;renderMap();renderResults();
+      $("mapHint").textContent=paths.length?`${paths.length} viable path(s) · ${labels[$("objective").value].toLowerCase()} route highlighted`:"No route found";
+      $("resultCount").textContent=paths.length?`${paths.length} PATHS FOUND`:"NO PATH FOUND";
+      if(!paths.length)toast("No connected route found.");
+    }catch(error){$("mapHint").textContent=error.message||"Path calculation failed.";toast(error.message||"Path calculation failed.");}
+    finally{button.disabled=false;button.textContent=original;}
+  }
   function renderMap(){
-    const svg=$("networkMap"),nodes=nodeMap(),rankClasses=["rank-fast","rank-medium","rank-slow"];
+    const svg=$("networkMap"),rankClasses=["rank-fast","rank-medium","rank-slow"];
     let out="";
     if(domains[domain].nodes.length>500){
       svg.innerHTML='<text x="450" y="205" text-anchor="middle" fill="#9aacc1" font-size="18">Large geographic network loaded</text><text x="450" y="235" text-anchor="middle" fill="#71839b" font-size="12">Switch to 2D Map or 3D Globe to explore actual coordinates</text>';
@@ -30,6 +72,7 @@
       $("nodeCount").textContent=`${domains[domain].nodes.length} NODES · ${domains[domain].edges.length} LINKS`;
       window.dispatchEvent(new CustomEvent("pipeweb:render"));return;
     }
+    const nodes=nodeMap();
     svg.setAttribute("viewBox","0 0 900 440");
     domains[domain].edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]],key=edgeId(e[0],e[1]);const congestion=domains[domain].congested.includes(key)?" congested":"";out+=`<path class="edge${congestion}" d="M${a.x} ${a.y} L${b.x} ${b.y}" data-edge="${key}"/>`;});
     paths.map((p,i)=>({p,i})).reverse().forEach(({p,i})=>{
@@ -88,8 +131,10 @@
 
   function haversine(a,b){const rad=x=>x*Math.PI/180,R=6371,dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),v=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(v))}
   function finalizeNetwork(coords,links,name){
-    if(coords.size>12000)throw new Error("This network exceeds 12,000 nodes. Simplify it before importing.");
-    const values=[...coords.values()],lats=values.map(n=>n.lat),lngs=values.map(n=>n.lng),minLat=Math.min(...lats),maxLat=Math.max(...lats),minLng=Math.min(...lngs),maxLng=Math.max(...lngs),spanLat=maxLat-minLat||1,spanLng=maxLng-minLng||1,ids=new Map();
+    if(coords.size>100000)throw new Error("This network exceeds the 100,000-node import limit. Simplify it before importing.");
+    const values=[...coords.values()];let minLat=Infinity,maxLat=-Infinity,minLng=Infinity,maxLng=-Infinity;
+    for(const n of values){if(n.lat<minLat)minLat=n.lat;if(n.lat>maxLat)maxLat=n.lat;if(n.lng<minLng)minLng=n.lng;if(n.lng>maxLng)maxLng=n.lng}
+    const spanLat=maxLat-minLat||1,spanLng=maxLng-minLng||1,ids=new Map();
     const nodes=values.map((n,i)=>{const id="N"+String(i+1).padStart(5,"0");ids.set(n.key,id);return[id,n.name||"Network node",40+(n.lng-minLng)/spanLng*820,400-(n.lat-minLat)/spanLat*360,n.lat,n.lng]});
     const edges=[];for(const link of links.values()){let a=coords.get(link.a),b=coords.get(link.b);if(link.props?.reverse){const tmp=a;a=b;b=tmp}const distance=haversine(a,b);if(distance<0.0001)continue;const klass=link.props?.highway||"residential",defaults={motorway:100,trunk:80,primary:60,secondary:50,tertiary:40,residential:30,service:15,footway:5,path:5};const parsed=Number.parseFloat(link.props?.maxspeed);const speed=parsed>0?parsed:(defaults[klass]||35);const time=distance/Math.max(5,speed)*60;edges.push([ids.get(a.key),ids.get(b.key),time,distance,distance*0.08,distance*0.12,Boolean(link.props?.oneway)])}
     if(!edges.length)throw new Error("No connected segments found in this network.");

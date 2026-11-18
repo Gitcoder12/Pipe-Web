@@ -24,6 +24,8 @@ jobs:
           node --check app.js
           node --check geo-view.js
           node --check config.js
+          node --check workers/path-worker.js
+          node tests/path-worker.test.cjs
       - name: Verify application entry points
         run: |
           test -s index.html
@@ -31,7 +33,8 @@ jobs:
           test -s app.js
           test -s geo-view.js
           test -s config.js
-          grep -q 'href="styles.css"' index.html
+          test -s workers/path-worker.js
+          grep -q 'href="styles.css' index.html
           grep -q 'src="app.js"' index.html
           grep -q 'src="geo-view.js"' index.html
           grep -q 'src="config.js"' index.html

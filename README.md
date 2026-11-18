@@ -45,7 +45,7 @@ python -m http.server 8000
 
 Open http://localhost:8000.
 
-The schematic view works locally. Map tiles, the 3D globe assets, geocoding and OpenStreetMap downloads require an internet connection.
+The schematic view works locally. Map tiles, the 3D globe assets, geocoding and OpenStreetMap downloads require an internet connection. Route search runs in `workers/path-worker.js`, keeping Dijkstra calculations off the UI thread. Imported networks support up to 100,000 nodes; map rendering can still be the limiting factor for very large graphs.
 
 ## Views
 
@@ -72,7 +72,7 @@ See [LIVE-DATA.md](LIVE-DATA.md) for the free-first data-source inventory, worki
 | `index.html` | Application structure and controls |
 | `config.js` | Public data endpoint configuration (no secrets) |
 | `styles.css` | Responsive interface, route palette and motion |
-| `app.js` | Graph data, Dijkstra routing, alternatives, ranking and schematic rendering |
+| `app.js` | Graph data, route UI, ranking and schematic rendering |\n| `workers/path-worker.js` | Off-main-thread Dijkstra search and alternative-path calculation |
 | `geo-view.js` | Leaflet map and Globe.gl visualization |
 | `LIVE-DATA.md` | Free and paid data-source inventory, quotas and integrity rules |
 | `workers/live-api.js` | Cached anonymous OpenSky aircraft proxy |
