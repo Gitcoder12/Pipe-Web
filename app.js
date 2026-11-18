@@ -21,13 +21,59 @@
   function findPaths(start,end,obj,avoid,alternatives){const first=shortestPath(start,end,obj,new Set(),avoid);if(!first)return[];const list=[first];if(alternatives){const candidates=new Map(),stride=Math.max(1,Math.ceil(first.edges.length/8));for(let i=0;i<first.edges.length;i+=stride){const blocked=new Set([edgeId(first.ids[i],first.ids[i+1])]);const p=shortestPath(start,end,obj,blocked,avoid);if(p&&p.ids.join("|")!==first.ids.join("|"))candidates.set(p.ids.join("|"),p)}for(let p of candidates.values())list.push(p);list.sort((a,b)=>a.score-b.score);return list.slice(0,3)}return list}
   function populateSelects(){const ns=domains[domain].nodes,opts=ns.map(n=>`<option value="${n[0]}">${n[0]} — ${n[1]}</option>`).join("");$("origin").innerHTML=opts;$("destination").innerHTML=opts;$("origin").value=ns[0]?.[0]||"";$("destination").value=ns[ns.length-1]?.[0]||""}
   function optimize(){const a=$("origin").value,b=$("destination").value;if(a===b){toast("Choose two different endpoints.");return}paths=findPaths(a,b,$("objective").value,$("avoidCongestion").checked,$("showAlternatives").checked);selected=0;renderMap();renderResults();$("mapHint").textContent=paths.length?`${paths.length} viable path(s) · ${labels[$("objective").value].toLowerCase()} route highlighted`:"No route found";$("resultCount").textContent=paths.length?`${paths.length} PATHS FOUND`:"NO PATH FOUND";if(!paths.length)toast("No connected route found.");}
-  function renderMap(){const svg=$("networkMap"),nodes=nodeMap(),best=paths[selected]||paths[0],alts=paths.filter((_,i)=>i!==selected);let out="";if(domains[domain].nodes.length>500){svg.innerHTML='<text x="450" y="205" text-anchor="middle" fill="#9aacc1" font-size="18">Large geographic network loaded</text><text x="450" y="235" text-anchor="middle" fill="#71839b" font-size="12">Switch to 2D Map or 3D Globe to explore actual coordinates</text>';svg.setAttribute("viewBox","0 0 900 440");$("networkName").textContent=domains[domain].name;$("nodeCount").textContent=`${domains[domain].nodes.length} NODES · ${domains[domain].edges.length} LINKS`;window.dispatchEvent(new CustomEvent("pipeweb:render"));return}svg.setAttribute("viewBox","0 0 900 440");domains[domain].edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]],key=edgeId(e[0],e[1]),onBest=best&&best.edges.includes(e),onAlt=alts.some(p=>p.edges.includes(e));let cls=onBest?"best":onAlt?"alt":domains[domain].congested.includes(key)?"congested":"";out+=`<path class="edge ${cls}" d="M${a.x} ${a.y} L${b.x} ${b.y}" data-edge="${key}"/>`;});
-    if(best){best.edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]];const x=(a.x+b.x)/2,y=(a.y+b.y)/2;out+=`<text class="edge-label" x="${x}" y="${y-8}" text-anchor="middle">${metric(e,$("objective").value)} ${domains[domain].units[$("objective").value]}</text>`})}
-    domains[domain].nodes.forEach(n=>{const [id,name,x,y]=n,kind=id===$("origin").value?"origin":id===$("destination").value?"destination":best&&best.ids.includes(id)?"on-best":"";out+=`<g class="node ${kind}" transform="translate(${x} ${y})"><circle r="9"/><text y="25">${id} · ${name}</text></g>`});
-    if(best){const coords=best.ids.map(id=>nodes[id]);for(let i=0;i<Math.min(3,coords.length-1);i++){const a=coords[i],b=coords[i+1];out+=`<circle class="flow-particle" r="3.5"><animateMotion dur="${1.4+i*.16}s" repeatCount="indefinite" path="M${a.x} ${a.y} L${b.x} ${b.y}"/></circle>`}}
-    svg.innerHTML=out;$("networkName").textContent=domains[domain].name;$("nodeCount").textContent=`${domains[domain].nodes.length} NODES · ${domains[domain].edges.length} LINKS`;window.dispatchEvent(new CustomEvent("pipeweb:render"));
+  function renderMap(){
+    const svg=$("networkMap"),nodes=nodeMap(),rankClasses=["rank-fast","rank-medium","rank-slow"];
+    let out="";
+    if(domains[domain].nodes.length>500){
+      svg.innerHTML='<text x="450" y="205" text-anchor="middle" fill="#9aacc1" font-size="18">Large geographic network loaded</text><text x="450" y="235" text-anchor="middle" fill="#71839b" font-size="12">Switch to 2D Map or 3D Globe to explore actual coordinates</text>';
+      svg.setAttribute("viewBox","0 0 900 440");$("networkName").textContent=domains[domain].name;
+      $("nodeCount").textContent=`${domains[domain].nodes.length} NODES · ${domains[domain].edges.length} LINKS`;
+      window.dispatchEvent(new CustomEvent("pipeweb:render"));return;
+    }
+    svg.setAttribute("viewBox","0 0 900 440");
+    domains[domain].edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]],key=edgeId(e[0],e[1]);const congestion=domains[domain].congested.includes(key)?" congested":"";out+=`<path class="edge${congestion}" d="M${a.x} ${a.y} L${b.x} ${b.y}" data-edge="${key}"/>`;});
+    paths.forEach((p,i)=>{
+      const cls=rankClasses[Math.min(i,2)],selectedClass=i===selected?" selected":"";
+      p.edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]];out+=`<path class="ranked-edge ${cls}${selectedClass}" d="M${a.x} ${a.y} L${b.x} ${b.y}" data-rank="${i}" data-edge="${edgeId(e[0],e[1])}"/>`;});
+      if(p.edges.length){
+        const a=nodes[p.ids[0]],b=nodes[p.ids[1]];
+        out+=`<circle class="flow-particle ${cls}" r="4"><animateMotion dur="${2.8+i*.8}s" repeatCount="indefinite" path="M${a.x} ${a.y} L${b.x} ${b.y}"/></circle>`;
+      }
+    });
+    const best=paths[0];
+    if(best){best.edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]],x=(a.x+b.x)/2,y=(a.y+b.y)/2;out+=`<text class="edge-label" x="${x}" y="${y-8}" text-anchor="middle">${metric(e,$("objective").value)} ${domains[domain].units[$("objective").value]}</text>`;});}
+    domains[domain].nodes.forEach(n=>{
+      const [id,name,x,y]=n,kind=id===$("origin").value?"origin":id===$("destination").value?"destination":paths.some(p=>p.ids.includes(id))?"on-route":"";
+      out+=`<g class="node ${kind}" transform="translate(${x} ${y})"><circle r="9"/><text y="25">${id} · ${name}</text></g>`;
+    });
+    svg.innerHTML=out;$("networkName").textContent=domains[domain].name;
+    $("nodeCount").textContent=`${domains[domain].nodes.length} NODES · ${domains[domain].edges.length} LINKS`;
+    window.dispatchEvent(new CustomEvent("pipeweb:render"));
   }
-  function renderResults(){const el=$("results");if(!paths.length){el.innerHTML='<div class="empty-state panel"><span class="empty-icon">⌁</span><strong>No connected path found</strong><p>Try another pair of endpoints or network.</p></div>';return}const obj=$("objective").value,unit=domains[domain].units;el.innerHTML=paths.map((p,i)=>{const m=p.metrics,primary=m[obj],max=paths[paths.length-1].metrics[obj]||primary,percent=Math.max(18,100*primary/max);return `<article class="route-card ${i===0?"best":""} ${i===selected?"selected":""}" data-index="${i}"><div class="route-top"><span class="route-name">PATH 0${i+1}</span><span class="route-tag">${i===0?"✦ OPTIMAL": "ALTERNATIVE"}</span></div><div class="route-time">${fmt(primary)} <small>${unit[obj]}</small></div><div class="route-metrics"><div class="metric"><span>TIME</span><b>${fmt(m.time)} ${unit.time}</b></div><div class="metric"><span>DISTANCE</span><b>${fmt(m.distance)} ${unit.distance}</b></div><div class="metric"><span>COST</span><b>${fmt(m.cost)} ${unit.cost}</b></div></div><div class="route-via">FLOW · ${p.ids.map(id=>id).join(" → ")}</div><div class="route-bar"><span style="width:${percent}%"></span></div></article>`}).join("");el.querySelectorAll(".route-card").forEach(card=>card.addEventListener("click",()=>{selected=Number(card.dataset.index);el.querySelectorAll(".route-card").forEach(c=>c.classList.toggle("selected",Number(c.dataset.index)===selected));renderMap()}))}
+  
+  function renderResults(){
+    const el=$("results");
+    if(!paths.length){el.innerHTML='<div class="empty-state panel"><span class="empty-icon">⌁</span><strong>No connected path found</strong><p>Try another pair of endpoints or network.</p></div>';return;}
+    const obj=$("objective").value,unit=domains[domain].units,labels=obj==="time"?["FASTEST","MEDIUM","SLOWEST"]:["BEST MATCH","2ND OPTION","3RD OPTION"];
+    const classes=["fast","medium","slow"];
+    el.innerHTML=paths.map((p,i)=>{
+      const m=p.metrics,primary=m[obj],best=paths[0].metrics[obj],delta=best?((primary-best)/best*100):0;
+      return `<article class="route-card route-${classes[Math.min(i,2)]} ${i===selected?"selected":""}" data-index="${i}" tabindex="0" role="button" aria-label="Select path ${i+1}">
+        <div class="route-top"><span class="route-name"><i class="rank-dot"></i> PATH 0${i+1}</span><span class="route-tag">${labels[i]||"ALTERNATIVE"}</span></div>
+        <div class="route-time">${fmt(primary)} <small>${unit[obj]}</small></div>
+        <div class="route-delta">${i===0?"Best available": "+"+fmt(delta)+"% vs best on selected objective"}</div>
+        <div class="route-metrics"><div class="metric"><span>TIME</span><b>${fmt(m.time)} ${unit.time}</b></div><div class="metric"><span>DISTANCE</span><b>${fmt(m.distance)} ${unit.distance}</b></div><div class="metric"><span>COST</span><b>${fmt(m.cost)} ${unit.cost}</b></div></div>
+        <div class="route-via">FLOW · ${p.ids.join(" → ")}</div>
+        <div class="route-bar"><span style="width:${Math.max(8,100/(1+Math.max(0,delta)/100))}%"></span></div>
+      </article>`;
+    }).join("");
+    el.querySelectorAll(".route-card").forEach(card=>{
+      const choose=()=>{selected=Number(card.dataset.index);el.querySelectorAll(".route-card").forEach(c=>c.classList.toggle("selected",Number(c.dataset.index)===selected));renderMap();};
+      card.addEventListener("click",choose);
+      card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();choose();}});
+    });
+  }
+  
   function highlightSelected(){const p=paths[selected];if(!p)return;const keys=new Set(p.edges.map(e=>edgeId(e[0],e[1])));$("networkMap").querySelectorAll(".edge").forEach(el=>{el.classList.toggle("best",keys.has(el.dataset.edge));el.classList.toggle("alt",!keys.has(el.dataset.edge)&&paths.some((x,i)=>i!==selected&&x.edges.some(e=>edgeId(e[0],e[1])===el.dataset.edge)))})}
   function fmt(n){return Number(n.toFixed(1)).toString()}
   function toast(msg){const el=$("toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2200)}
