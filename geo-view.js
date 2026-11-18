@@ -99,5 +99,5 @@
   document.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.view)));
   $("worldFlowType").addEventListener("change",drawWorld);
   window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();if(mode==="globe")drawGlobe();if(mode==="world")drawWorld();});
-  window.addEventListener("resize",()=>{if(mode==="map"&&map)map.invalidateSize();if(mode==="globe"&&globe)globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);});
+  window.addEventListener("resize",()=>{if(mode==="map"&&map)map.invalidateSize();if((mode==="globe"||mode==="world")&&globe)globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);});
 })();
