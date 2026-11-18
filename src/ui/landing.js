@@ -144,7 +144,8 @@
         const original = source.querySelector('[data-layer="' + clone.dataset.layer + '"]');
         const enabled = !original.classList.contains("active");
         setLayer(clone.dataset.layer, enabled);
-        clone.classList.toggle("active", enabled);
+        clone.classList.toggle("active", original.classList.contains("active"));
+        clone.setAttribute("aria-pressed", original.getAttribute("aria-pressed"));
       });
       target.appendChild(clone);
     });
