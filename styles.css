@@ -374,3 +374,6 @@ body.legacy-route .legacy-workspace{display:block!important}
 }
 @media(min-width:768px){.layer-sheet,.layer-sheet-backdrop{display:none!important}}
 @media(prefers-reduced-motion:reduce){.live-globe,.live-map{animation:none;opacity:1}.feed-pulse{animation:none}}
+
+.mobile-layers-toggle{display:none;pointer-events:auto;border-radius:12px;color:#f4f6f8;padding:11px 14px;font:500 12px system-ui;cursor:pointer}
+@media(max-width:767px){.mobile-layers-toggle{display:block;align-self:flex-start}.landing-bottom{flex-direction:row;align-items:flex-end;justify-content:space-between}.live-status{margin-left:auto}}
