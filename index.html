@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261118b">
 </head>
 <body>
 <div id="earthBackdrop" aria-hidden="true"></div>
@@ -34,53 +34,39 @@
 
   <main class="main">
   <section class="live-flow-section" id="live-flows">
-    <div class="live-flow-heading">
-      <div><span class="live-kicker">PIPE-WEB / GLOBAL FLOW INTELLIGENCE</span><h1 class="live-title">Watch the world move.</h1><p>Explore real-world networks, goods and movement on one map.</p></div>
-      <div class="live-feed-summary"><span class="live-indicator"></span><span id="flowFeedStatus">CONNECTING TO DATA SOURCES</span></div>
+    <div class="flow-intro">
+      <div><span class="live-kicker">PIPE-WEB / GLOBAL FLOW INTELLIGENCE</span><h1 class="live-title">The world, in motion.</h1><p>Choose a network. Follow the movement of goods and services across the planet.</p></div>
+      <div class="live-feed-summary"><span class="live-indicator"></span><span id="flowFeedStatus">SELECT A NETWORK TO EXPLORE</span></div>
     </div>
-    <div class="flow-workspace">
-      <aside class="flow-sidebar">
-        <div class="flow-step"><span>01</span><div><b>Choose a network</b><small>What moves across the world?</small></div></div>
-        <div class="flow-network-grid" id="flowNetwork">
-          <button class="flow-network active" data-network="ships"><span class="flow-glyph">SEA</span><b>Ships</b></button>
-          <button class="flow-network" data-network="aircraft"><span class="flow-glyph">AIR</span><b>Aircraft</b></button>
-          <button class="flow-network" data-network="rail"><span class="flow-glyph">RAIL</span><b>Rail</b></button>
-          <button class="flow-network" data-network="road"><span class="flow-glyph">ROAD</span><b>Roads</b></button>
-          <button class="flow-network" data-network="pipelines"><span class="flow-glyph">PIPE</span><b>Pipelines</b></button>
-          <button class="flow-network" data-network="digital"><span class="flow-glyph">DATA</span><b>Digital</b></button>
-        </div>
-        <div class="flow-separator"></div>
-        <div class="flow-step"><span>02</span><div><b>Choose what moves</b><small>Filter the flow by goods or services.</small></div></div>
-        <div class="flow-toggle" role="group" aria-label="Goods or services">
-          <button class="active" data-kind="goods">Goods</button><button data-kind="services">Services</button>
-        </div>
-        <label class="flow-select-label">COMMODITY / CATEGORY
-          <select id="flowCommodity">
-            <option value="2709">Crude oil</option><option value="2701">Coal</option><option value="271111">Liquefied natural gas</option><option value="2710">Refined petroleum</option><option value="all">All goods</option>
-          </select>
-        </label>
-        <label class="flow-select-label">REPORTING ECONOMY
-          <select id="flowReporter"><option value="356">India</option><option value="156">China</option><option value="842">United States</option><option value="276">Germany</option><option value="392">Japan</option></select>
-        </label>
-        <label class="flow-select-label">TRADE PERIOD
-          <select id="flowPeriod"><option value="2024">2024 · Annual</option><option value="2023">2023 · Annual</option><option value="2022">2022 · Annual</option></select>
-        </label>
-        <button id="loadTradeFlows" class="flow-load-button">LOAD TRADE FLOWS <span>↗</span></button>
-        <p class="flow-source-note">Trade values are official reported statistics, not live vessel cargo. Live ship positions require an AIS data provider.</p>
-      </aside>
-      <div class="flow-map-column">
-        <div class="flow-map-toolbar"><div><span class="map-eyebrow">GLOBAL VIEW / LIVE NETWORKS</span><b id="flowMapTitle">MARITIME · CRUDE OIL</b></div><div class="flow-map-legend"><span><i class="legend-live"></i>Reported trade</span><span><i class="legend-muted"></i>Network context</span></div></div>
-        <div id="flowMap" aria-label="Interactive global map showing international trade flows"></div>
-        <div class="flow-map-footer"><span id="flowMapSource">SOURCE: UN COMTRADE · REPORTED TRADE DATA</span><span id="flowMapPeriod">PERIOD: 2024</span></div>
+    <div class="network-sections" id="flowNetwork">
+      <button class="network-card sea-card active" data-network="ships"><span class="network-card-index">01 / MARITIME</span><strong>Ships</strong><small>Oil · Coal · LNG · Containers</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card road-card" data-network="road"><span class="network-card-index">02 / ROAD FREIGHT</span><strong>Trucks</strong><small>Food · Retail · Industrial goods</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card air-card" data-network="aircraft"><span class="network-card-index">03 / AVIATION</span><strong>Aircraft</strong><small>Air cargo · Passenger networks</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card rail-card" data-network="rail"><span class="network-card-index">04 / RAIL</span><strong>Rail</strong><small>Bulk freight · Intermodal · Passenger</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card pipe-card" data-network="pipelines"><span class="network-card-index">05 / ENERGY</span><strong>Pipelines</strong><small>Crude oil · Gas · Refined products</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card digital-card" data-network="digital"><span class="network-card-index">06 / DIGITAL</span><strong>Digital flows</strong><small>Data · Cloud · Network services</small><span class="network-card-arrow">↗</span></button>
+    </div>
+    <div class="flow-filter-bar">
+      <div class="flow-filter-title"><span>EXPLORE SELECTED NETWORK</span><b id="flowMapTitle">SHIPS / MARITIME</b></div>
+      <div class="flow-filter-controls">
+        <div class="flow-toggle" role="group" aria-label="Goods or services"><button class="active" data-kind="goods">Goods</button><button data-kind="services">Services</button></div>
+        <label class="flow-select-label">COMMODITY / CATEGORY<select id="flowCommodity"><option value="2709">Crude oil</option><option value="2701">Coal</option><option value="271111">Liquefied natural gas</option><option value="2710">Refined petroleum</option><option value="all">All goods</option></select></label>
+        <label class="flow-select-label">COUNTRY<select id="flowReporter"><option value="356">India</option><option value="156">China</option><option value="842">United States</option><option value="276">Germany</option><option value="392">Japan</option></select></label>
+        <label class="flow-select-label">YEAR<select id="flowPeriod"><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option></select></label>
+        <button id="loadTradeFlows" class="flow-load-button">SHOW FLOWS ↗</button>
       </div>
+      <p class="flow-source-note">Reported trade values are not live cargo telemetry. Live vessel locations and verified cargo details require an AIS data provider.</p>
     </div>
+    <div class="flow-map-toolbar"><div><span class="map-eyebrow">GLOBAL MAP / SELECT A FLOW TO INSPECT</span></div><div class="flow-map-legend"><span><i class="legend-live"></i>Reported trade link</span><span><i class="legend-muted"></i>Network context</span></div></div>
+    <div id="flowMap" aria-label="Interactive global map showing selected network flows"></div>
+    <div class="flow-map-footer"><span id="flowMapSource">SOURCE: UN COMTRADE · REPORTED TRADE DATA</span><span id="flowMapPeriod">PERIOD: 2024</span></div>
     <div class="flow-metrics" id="flowMetrics">
-      <div><span>REPORTED TRADE VALUE</span><b id="flowTotalValue">—</b><small>USD · selected reporter and category</small></div>
-      <div><span>TRADE PARTNERS</span><b id="flowPartnerCount">—</b><small>Partners in returned records</small></div>
+      <div><span>REPORTED TRADE VALUE</span><b id="flowTotalValue">—</b><small>USD · selected country and category</small></div>
+      <div><span>TRADE PARTNERS</span><b id="flowPartnerCount">—</b><small>Returned partner records</small></div>
       <div><span>DATA PERIOD</span><b id="flowDataPeriod">—</b><small id="flowFreshness">Waiting for source response</small></div>
-      <div><span>VESSEL POSITIONS</span><b id="flowVesselCount">NOT CONNECTED</b><small id="flowVesselNote">AIS feed not configured</small></div>
+      <div><span>LIVE VEHICLES</span><b id="flowVesselCount">NOT CONNECTED</b><small id="flowVesselNote">Live provider not configured</small></div>
     </div>
-    <div class="flow-table-wrap"><div class="flow-table-heading"><b>Largest reported trade flows</b><span id="flowTableNote">Waiting for data</span></div><div id="flowTable"><div class="flow-empty">Select a category and load trade data to explore actual reported values.</div></div></div>
+    <div class="flow-table-wrap"><div class="flow-table-heading"><b>Largest reported flows</b><span id="flowTableNote">Select a network and load data</span></div><div id="flowTable"><div class="flow-empty">Select a category and load reported trade statistics to explore real partner values.</div></div></div>
   </section>
 
     <section class="hero" id="explore">
@@ -89,7 +75,7 @@
         <h1>THE WORLD.<br><span>IN FLOW.</span></h1>
         <p class="hero-description">Every network has a better way through.<br>Find it.</p>
         <div class="hero-actions">
-          <a class="hero-cta" href="#route-planner">EXPLORE THE NETWORK <span>↘</span></a>
+          <a class="hero-cta" href="#live-flows">EXPLORE THE NETWORK <span>↘</span></a>
           <span class="hero-index">01 / GLOBAL PATH INTELLIGENCE</span>
         </div>
       </div>
