@@ -26,7 +26,7 @@
       this.bbox = bbox; this.status = "CONNECTING"; this.emit();
       if (!(typeof window !== "undefined" && "WebSocket" in window)) { this.status = "UNSUPPORTED"; this.emit(); return; }
       try {
-        this.ws = new WebSocket(URL);
+        this.ws = new window.WebSocket(URL);
         this.ws.onopen = () => {
           if (!this.active) return;
           this.retry = 0; this.status = "LIVE";
