@@ -32,7 +32,7 @@
     }
     svg.setAttribute("viewBox","0 0 900 440");
     domains[domain].edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]],key=edgeId(e[0],e[1]);const congestion=domains[domain].congested.includes(key)?" congested":"";out+=`<path class="edge${congestion}" d="M${a.x} ${a.y} L${b.x} ${b.y}" data-edge="${key}"/>`;});
-    paths.forEach((p,i)=>{
+    paths.map((p,i)=>({p,i})).reverse().forEach(({p,i})=>{
       const cls=rankClasses[Math.min(i,2)],selectedClass=i===selected?" selected":"";
       p.edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]];out+=`<path class="ranked-edge ${cls}${selectedClass}" d="M${a.x} ${a.y} L${b.x} ${b.y}" data-rank="${i}" data-edge="${edgeId(e[0],e[1])}"/>`;});
       if(p.edges.length){
