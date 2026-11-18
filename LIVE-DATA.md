@@ -46,6 +46,6 @@ Never interpolate a missing aircraft or vessel position and present it as observ
 
 ## Deployment
 
-The static app can still run without a backend. To enable the anonymous OpenSky proxy, deploy `workers/live-api.js` as a Cloudflare Worker and route `/api/aircraft` to it on the app's origin (or configure a same-origin reverse proxy). The worker uses no secret because it uses anonymous access, and caches global results for 15 minutes to respect the documented quota. The current UI's illustrative World flows remain the fallback until a live adapter is connected and verified.
+The static app can still run without a backend. The current Live Earth client queries the OpenSky `/states/all` endpoint directly and refreshes at most once every 15 minutes per open tab. Anonymous global queries cost 4 credits each, so a shared Cloudflare Worker cache is strongly recommended before broad public traffic. To enable the anonymous OpenSky proxy, deploy `workers/live-api.js` as a Cloudflare Worker and route `/api/aircraft` to it on the app's origin (or configure a same-origin reverse proxy). The worker uses no secret because it uses anonymous access, and caches global results for 15 minutes to respect the documented quota. The current UI's illustrative World flows remain the fallback until a live adapter is connected and verified.
 
 AISStream requires a separate server-side WebSocket proxy and a server environment variable named `AISSTREAM_API_KEY`; this is not included as an active browser integration.
