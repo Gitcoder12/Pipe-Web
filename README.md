@@ -62,7 +62,7 @@ World-flow arcs are illustrative examples, not verified live flight paths, vesse
 - Road travel times are estimated from road class or tagged speed limits.
 - Demo data is deterministic and must not be mistaken for live telemetry.
 
-See [LIVE-DATA.md](LIVE-DATA.md) for the free-first data-source inventory and optional paid integrations when that document is merged into the default branch.
+See [LIVE-DATA.md](LIVE-DATA.md) for the free-first data-source inventory, working OpenSky proxy and optional paid integrations.
 
 ## Architecture
 
@@ -72,6 +72,8 @@ See [LIVE-DATA.md](LIVE-DATA.md) for the free-first data-source inventory and op
 | `styles.css` | Responsive interface, route palette and motion |
 | `app.js` | Graph data, Dijkstra routing, alternatives, ranking and schematic rendering |
 | `geo-view.js` | Leaflet map and Globe.gl visualization |
+| `LIVE-DATA.md` | Free and paid data-source inventory, quotas and integrity rules |
+| `workers/live-api.js` | Cached anonymous OpenSky aircraft proxy |
 | `.github/workflows/ci.yml` | JavaScript syntax and entry-point checks |
 | `.github/workflows/deploy.yml` | Automatic GitHub Pages deployment |
 
