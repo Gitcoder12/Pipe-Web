@@ -28,8 +28,10 @@ jobs:
           node --check src/osm/cache.js
           node --check src/osm/overpass.js
           node --check src/feeds/maritime.js
+          node --check src/feeds/recorder.js
           node tests/overpass.test.cjs
           node tests/maritime.test.cjs
+          node tests/recorder.test.cjs
           node tests/path-worker.test.cjs
       - name: Verify application entry points
         run: |
@@ -42,6 +44,7 @@ jobs:
           test -s src/osm/cache.js
           test -s src/osm/overpass.js
           test -s src/feeds/maritime.js
+          test -s src/feeds/recorder.js
           grep -q 'href="styles.css' index.html
           grep -q 'src="app.js"' index.html
           grep -q 'src="geo-view.js"' index.html
