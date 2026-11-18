@@ -101,6 +101,7 @@
   function connectSea() {
     const feed = window.PipeWebMaritime;
     if (!feed) { status("Live ship feed unavailable", "error"); return; }
+    if (state.unsubscribe) state.unsubscribe();
     state.unsubscribe = feed.subscribe(snapshot => {
       state.ships = new Map((snapshot.ships || []).map(ship => [String(ship.mmsi), ship]));
       render();
@@ -227,6 +228,7 @@
     else { button.classList.toggle("active", enabled); button.setAttribute("aria-pressed", String(enabled)); if (enabled) setLayer(name, true); }
   });
   $("layerSheetBackdrop").addEventListener("click", () => { $("layerSheet").hidden = true; $("layerSheetBackdrop").hidden = true; });
+  $("mobileLayersToggle").addEventListener("click", () => { $("layerSheet").hidden = false; $("layerSheetBackdrop").hidden = false; });
   $("menuToggle").addEventListener("contextmenu", event => event.preventDefault());
   document.addEventListener("click", event => {
     if (!event.target.closest("#landingMenu,#menuToggle")) openMenu(false);
