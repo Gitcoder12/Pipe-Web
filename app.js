@@ -42,6 +42,7 @@
       pathRequests.set(id,{resolve,reject});
       worker.postMessage({id,start,end,objective:obj,avoidCongestion:avoid,alternatives,
         nodes:domains[domain].nodes.map(n=>n[0]),
+        nodeCoords:domains[domain].nodes.filter(n=>Number.isFinite(Number(n[4]))&&Number.isFinite(Number(n[5]))).map(n=>[n[0],n[4],n[5]]),
         edges:domains[domain].edges,
         congested:domains[domain].congested
       });
@@ -50,7 +51,7 @@
   function populateSelects(){const ns=domains[domain].nodes,opts=ns.map(n=>`<option value="${n[0]}">${n[0]} — ${n[1]}</option>`).join("");$("origin").innerHTML=opts;$("destination").innerHTML=opts;$("origin").value=ns[0]?.[0]||"";$("destination").value=ns[ns.length-1]?.[0]||""}
   async function optimize(){
     const a=$("origin").value,b=$("destination").value;
-    if(a===b){toast("Choose two different endpoints.");return}
+    if(a===b){paths=[];selected=0;renderMap();renderResults();$("mapHint").textContent="Origin and destination are the same location."; $("resultCount").textContent="SAME ENDPOINT";toast("Choose two different endpoints.");return}
     const button=$("findBtn"),original=button.textContent;
     button.disabled=true;button.textContent="CALCULATING IN WORKER…";
     $("mapHint").textContent="Calculating routes off the main thread…";
