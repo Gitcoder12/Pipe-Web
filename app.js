@@ -50,8 +50,8 @@
     if(!coords.size)throw new Error("GeoJSON needs LineString or MultiLineString features.");return finalizeNetwork(coords,links,name);
   }
   function parseGpx(xml,name){
-    const doc=new DOMParser().parseFromString(xml,"application/xml");if(doc.querySelector("parsererror"))throw new Error("Invalid GPX XML.");
-    const coords=new Map(),links=new Map();[...doc.querySelectorAll("trkseg,rte")].forEach(seg=>{let prev=null;[...seg.querySelectorAll("trkpt,rtept")].forEach(p=>{const lat=Number(p.getAttribute("lat")),lng=Number(p.getAttribute("lon")),key=lat.toFixed(6)+","+lng.toFixed(6);if(!coords.has(key))coords.set(key,{key,lat,lng,name:"GPX point"});if(prev&&prev!==key)links.set([prev,key].sort().join("|"),{a:prev,b:key,props:{}});prev=key})});
+    const doc=new DOMParser().parseFromString(xml,"application/xml");if(doc.getElementsByTagName("parsererror").length)throw new Error("Invalid GPX XML.");
+    const all=Array.from(doc.getElementsByTagName("*")),segments=all.filter(el=>el.localName==="trkseg"||el.localName==="rte"),coords=new Map(),links=new Map();segments.forEach(seg=>{let prev=null;Array.from(seg.getElementsByTagName("*")).filter(p=>p.localName==="trkpt"||p.localName==="rtept").forEach(p=>{const lat=Number(p.getAttribute("lat")),lng=Number(p.getAttribute("lon"));if(!Number.isFinite(lat)||!Number.isFinite(lng))return;const key=lat.toFixed(6)+","+lng.toFixed(6);if(!coords.has(key))coords.set(key,{key,lat,lng,name:"GPX point"});if(prev&&prev!==key)links.set([prev,key].sort().join("|"),{a:prev,b:key,props:{}});prev=key})});
     return finalizeNetwork(coords,links,name);
   }
   function activateNetwork(network,label){domains.custom=network;domain="custom";paths=[];document.querySelectorAll(".domain").forEach(b=>b.classList.remove("active"));populateSelects();renderMap();renderResults();$("mapHint").textContent="Geographic network loaded · choose endpoints and optimize";$("resultCount").textContent="READY TO OPTIMIZE";$("importStatus").textContent=label+" · "+network.nodes.length.toLocaleString()+" nodes / "+network.edges.length.toLocaleString()+" links";toast("Network loaded. Choose endpoints and find paths.");}
