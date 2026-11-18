@@ -7,14 +7,35 @@ const reporters={"356":{name:"India",lat:20.59,lng:78.96},"156":{name:"China",la
 const coords={"156":[35.86,104.19],"842":[37.09,-95.71],"784":[23.42,53.85],"702":[1.35,103.82],"682":[23.89,45.08],"410":[35.91,127.77],"392":[36.2,138.25],"276":[51.16,10.45],"528":[52.13,5.29],"826":[55.37,-3.43],"250":[46.23,2.21],"380":[41.87,12.56],"724":[40.46,-3.75],"356":[20.59,78.96],"360":[-0.79,113.92],"458":[4.21,101.98],"764":[15.87,100.99],"704":[14.05,108.27],"36":[-25.27,133.77],"76":[-14.23,-51.92],"124":[56.13,-106.35],"484":[23.63,-102.55],"710":[-30.56,22.94],"566":[9.08,8.67],"818":[26.82,30.8],"12":[28.03,1.66],"504":[31.79,-7.09],"364":[32.43,53.69],"634":[25.35,51.18],"414":[29.31,47.48],"512":[21.47,55.98],"792":[38.96,35.24],"643":[61.52,105.32],"616":[51.92,19.15],"203":[49.82,15.47],"208":[56.26,9.5],"752":[60.12,18.64],"578":[60.47,8.47],"032":[-38.42,-63.62]};
 const goods=[["2709","Crude oil"],["2701","Coal"],["271111","Liquefied natural gas"],["2710","Refined petroleum"],["all","All goods"]];
 const services=[["200","Transport services"],["236","Travel services"],["266","Telecommunications & IT"],["268","Other business services"],["280","Personal & cultural services"]];
-let kind="goods",network="ships",layers=[];
+let kind="goods",network="ships",layers=[],vesselLayer=L.layerGroup().addTo(map);
 const num=n=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:0});
 const money=n=>{let v=Number(n||0);return v>=1e12?"$"+(v/1e12).toFixed(2)+"T":v>=1e9?"$"+(v/1e9).toFixed(2)+"B":v>=1e6?"$"+(v/1e6).toFixed(1)+"M":"$"+num(v)};
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function status(s,ok=false){$("flowFeedStatus").textContent=s;$("flowFeedStatus").style.color=ok?"#9fe0c7":"#d9b17b";}
 function label(){return $("flowCommodity").selectedOptions[0]?.text||"Goods";}
 function setOptions(){let arr=kind==="goods"?goods:services;$("flowCommodity").innerHTML=arr.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");}
-function chooseNetwork(n){network=n;document.querySelectorAll(".network-card").forEach(b=>b.classList.toggle("active",b.dataset.network===n));if(n==="ships"){status("TRADE STATISTICS AVAILABLE · AIS FEED NOT CONNECTED");$("flowVesselCount").textContent="NOT CONNECTED";$("flowVesselNote").textContent="Live vessel positions need an AIS provider key";}else{status(n.toUpperCase()+" FEED NOT CONNECTED");$("flowVesselCount").textContent="—";$("flowVesselNote").textContent="Verified provider integration pending";}$("flowMapTitle").textContent=n.toUpperCase()+" · "+label().toUpperCase();}
+function drawVessels(feed){
+ vesselLayer.clearLayers();
+ if(network!=="ships")return;
+ (feed.ships||[]).forEach(ship=>{
+  const speed=ship.sog==null?0:ship.sog,color=speed>15?"#e7b96c":speed>5?"#65d5b0":"#70b9ee";
+  const marker=L.circleMarker([ship.lat,ship.lon],{radius:4,color,weight:1,fillColor:color,fillOpacity:.9}).addTo(vesselLayer);
+  marker.bindTooltip(esc(ship.name||"Vessel "+ship.mmsi)+"<br>"+(ship.sog==null?"Speed unavailable":ship.sog.toFixed(1)+" kn")+" · "+(ship.cog==null?"Heading unavailable":ship.cog.toFixed(0)+"°"));
+ });
+}
+function connectMaritime(){
+ if(!window.PipeWebMaritime)return;
+ const b=map.getBounds(),south=b.getSouth(),north=b.getNorth(),west=b.getWest(),east=b.getEast(),area=(north-south)*(east-west);
+ let box=[south,west,north,east];
+ if(area>30000){const ratio=(east-west)/(north-south),w=Math.sqrt(30000*ratio),h=Math.sqrt(30000/ratio),lat=(south+north)/2,lng=(west+east)/2;box=[lat-h/2,lng-w/2,lat+h/2,lng+w/2];}
+ window.PipeWebMaritime.connect([[box[0],box[1]],[box[2],box[3]]]);
+}
+function chooseNetwork(n){
+ network=n;document.querySelectorAll(".network-card").forEach(b=>b.classList.toggle("active",b.dataset.network===n));vesselLayer.clearLayers();
+ if(n==="ships"){status("CONNECTING TO LIVE AIS · OPENSEAFEED");$("flowVesselCount").textContent="CONNECTING";$("flowVesselNote").textContent="Live AIS positions · provider coverage varies";connectMaritime();}
+ else{if(window.PipeWebMaritime)window.PipeWebMaritime.disconnect();status(n.toUpperCase()+" FEED NOT CONNECTED");$("flowVesselCount").textContent="—";$("flowVesselNote").textContent="Verified provider integration pending";}
+ $("flowMapTitle").textContent=n.toUpperCase()+" · "+label().toUpperCase();
+}
 function clear(){layers.forEach(l=>map.removeLayer(l));layers=[];}
 function plot(rows,reporter){clear();let origin=reporters[reporter]||reporters["356"],valid=rows.filter(r=>coords[String(r.partnerCode)]&&Number(r.primaryValue)>0).sort((a,b)=>Number(b.primaryValue)-Number(a.primaryValue)).slice(0,35);let arcs=[];
 valid.forEach(r=>{let dest=coords[String(r.partnerCode)];let l=L.polyline([[origin.lat,origin.lng],dest],{color:"#65d5b0",weight:Math.max(1.5,Math.min(6,1.4+Math.log10(Number(r.primaryValue)+1)*.38)),opacity:.78,className:"flow-map-line"}).addTo(map);l.bindTooltip(origin.name+" → "+(r.partnerDesc||"Partner")+"<br>"+money(r.primaryValue)+" reported value");layers.push(l);arcs.push(l);let m=L.circleMarker(dest,{radius:3.5,color:"#c9f2e1",weight:1,fillColor:"#65d5b0",fillOpacity:.9}).addTo(map);m.bindTooltip(r.partnerDesc||"Trade partner");layers.push(m);});
@@ -24,6 +45,7 @@ async function load(){if(network!=="ships"){status("NO VERIFIED FEED CONNECTED")
 document.querySelectorAll(".network-card").forEach(b=>b.addEventListener("click",()=>chooseNetwork(b.dataset.network)));
 document.querySelectorAll(".flow-toggle button").forEach(b=>b.addEventListener("click",()=>{kind=b.dataset.kind;document.querySelectorAll(".flow-toggle button").forEach(x=>x.classList.toggle("active",x===b));setOptions();$("flowMapTitle").textContent=network.toUpperCase()+" · "+label().toUpperCase();}));
 $("flowCommodity").addEventListener("change",()=>$("flowMapTitle").textContent=network.toUpperCase()+" · "+label().toUpperCase());
-$("loadTradeFlows").addEventListener("click",load);window.addEventListener("resize",()=>map.invalidateSize());chooseNetwork("ships");status("SELECT A NETWORK TO EXPLORE");
+$("loadTradeFlows").addEventListener("click",load);if(window.PipeWebMaritime)window.PipeWebMaritime.subscribe(feed=>{if(network!=="ships")return;drawVessels(feed);$("flowVesselCount").textContent=feed.count.toLocaleString();$("flowVesselNote").textContent=feed.status==="LIVE"?"Live AIS positions · OpenSeaFeed · 5-second display updates":feed.status+" · OpenSeaFeed";status(feed.status==="LIVE"?"LIVE AIS · "+feed.count+" VESSELS":"AIS · "+feed.status,feed.status==="LIVE");});
+window.addEventListener("resize",()=>map.invalidateSize());map.on("moveend",()=>{if(network==="ships"&&window.PipeWebMaritime&&window.PipeWebMaritime.status==="LIVE")connectMaritime();});chooseNetwork("ships");status("SELECT A NETWORK TO EXPLORE");
 $("flowTable").innerHTML='<div class="flow-empty">Choose coal, crude oil, LNG or another category, then load official trade statistics. These are reported trade values—not live cargo telemetry.</div>';
 })();
