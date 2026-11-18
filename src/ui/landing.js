@@ -33,6 +33,7 @@
     if (isMobile() || !window.Globe || state.globe) return;
     const host = $("liveGlobe");
     state.globe = Globe()(host)
+      .rendererConfig({ preserveDrawingBuffer: true, antialias: true, alpha: false })
       .backgroundColor("#0a0a0a")
       .showAtmosphere(true).atmosphereColor("#287da3").atmosphereAltitude(0.16)
       .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-night.jpg")
