@@ -64,7 +64,7 @@
     finally{button.disabled=false;button.textContent=original;}
   }
   function renderMap(){
-    const svg=$("networkMap"),nodes=nodeMap(),rankClasses=["rank-fast","rank-medium","rank-slow"];
+    const svg=$("networkMap"),rankClasses=["rank-fast","rank-medium","rank-slow"];
     let out="";
     if(domains[domain].nodes.length>500){
       svg.innerHTML='<text x="450" y="205" text-anchor="middle" fill="#9aacc1" font-size="18">Large geographic network loaded</text><text x="450" y="235" text-anchor="middle" fill="#71839b" font-size="12">Switch to 2D Map or 3D Globe to explore actual coordinates</text>';
@@ -72,6 +72,7 @@
       $("nodeCount").textContent=`${domains[domain].nodes.length} NODES · ${domains[domain].edges.length} LINKS`;
       window.dispatchEvent(new CustomEvent("pipeweb:render"));return;
     }
+    const nodes=nodeMap();
     svg.setAttribute("viewBox","0 0 900 440");
     domains[domain].edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]],key=edgeId(e[0],e[1]);const congestion=domains[domain].congested.includes(key)?" congested":"";out+=`<path class="edge${congestion}" d="M${a.x} ${a.y} L${b.x} ${b.y}" data-edge="${key}"/>`;});
     paths.map((p,i)=>({p,i})).reverse().forEach(({p,i})=>{
@@ -130,8 +131,10 @@
 
   function haversine(a,b){const rad=x=>x*Math.PI/180,R=6371,dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),v=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(v))}
   function finalizeNetwork(coords,links,name){
-    if(coords.size>12000)throw new Error("This network exceeds 12,000 nodes. Simplify it before importing.");
-    const values=[...coords.values()],lats=values.map(n=>n.lat),lngs=values.map(n=>n.lng),minLat=Math.min(...lats),maxLat=Math.max(...lats),minLng=Math.min(...lngs),maxLng=Math.max(...lngs),spanLat=maxLat-minLat||1,spanLng=maxLng-minLng||1,ids=new Map();
+    if(coords.size>100000)throw new Error("This network exceeds the 100,000-node import limit. Simplify it before importing.");
+    const values=[...coords.values()];let minLat=Infinity,maxLat=-Infinity,minLng=Infinity,maxLng=-Infinity;
+    for(const n of values){if(n.lat<minLat)minLat=n.lat;if(n.lat>maxLat)maxLat=n.lat;if(n.lng<minLng)minLng=n.lng;if(n.lng>maxLng)maxLng=n.lng}
+    const spanLat=maxLat-minLat||1,spanLng=maxLng-minLng||1,ids=new Map();
     const nodes=values.map((n,i)=>{const id="N"+String(i+1).padStart(5,"0");ids.set(n.key,id);return[id,n.name||"Network node",40+(n.lng-minLng)/spanLng*820,400-(n.lat-minLat)/spanLat*360,n.lat,n.lng]});
     const edges=[];for(const link of links.values()){let a=coords.get(link.a),b=coords.get(link.b);if(link.props?.reverse){const tmp=a;a=b;b=tmp}const distance=haversine(a,b);if(distance<0.0001)continue;const klass=link.props?.highway||"residential",defaults={motorway:100,trunk:80,primary:60,secondary:50,tertiary:40,residential:30,service:15,footway:5,path:5};const parsed=Number.parseFloat(link.props?.maxspeed);const speed=parsed>0?parsed:(defaults[klass]||35);const time=distance/Math.max(5,speed)*60;edges.push([ids.get(a.key),ids.get(b.key),time,distance,distance*0.08,distance*0.12,Boolean(link.props?.oneway)])}
     if(!edges.length)throw new Error("No connected segments found in this network.");
