@@ -203,6 +203,6 @@
   document.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.view)));
   $("worldFlowType").addEventListener("change",drawWorld);
   window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();if(mode==="globe")drawLiveEarth();if(mode==="world")drawWorld();});
-  if(window.PipeWebMaritime)window.PipeWebMaritime.subscribe(()=>{if(mode==="world"&&$("worldFlowType").value==="maritime")drawWorld();});
+  window.addEventListener("pipeweb:maritime:update",()=>{if(mode==="world"&&$("worldFlowType").value==="maritime")drawWorld();});
   window.addEventListener("resize",()=>{if(mode==="map"&&map)map.invalidateSize();if((mode==="globe"||mode==="world")&&globe)globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);if(backdropGlobe)backdropGlobe.width(window.innerWidth).height(window.innerHeight);});
 })();
