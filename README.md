@@ -89,3 +89,11 @@ This is an interactive prototype, not yet a production routing service.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+---
+
+## Examples Used
+- Finding a fastest route through a road network
+- Comparing flow paths through a fluid pipeline
+- Routing data through a network while balancing time, cost, and energy
+- Navigating a robot grid around blocked cells
