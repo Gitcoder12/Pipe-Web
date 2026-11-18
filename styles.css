@@ -14,3 +14,5 @@
 
 #networkMap[hidden]{display:none!important}
 .import-row{display:grid;grid-template-columns:190px minmax(160px,1fr) auto minmax(180px,1.2fr);gap:10px;align-items:center;margin-top:16px;padding:12px;background:#0c1420;border:1px solid #263449;border-radius:7px}.import-label,.place-label{display:grid;gap:6px;color:#8b9bb0;font:9px var(--mono);letter-spacing:.7px}.import-label input{max-width:100%;font:10px var(--font);color:#aab8c9}.place-label input{height:32px;min-width:0;background:#111b29;border:1px solid #2b3b50;border-radius:5px;padding:0 9px;color:#e8edf5;font:11px var(--font)}.import-status{font:9px var(--mono);color:#71839b;line-height:1.5}#loadOsmBtn:disabled{opacity:.55;cursor:wait}@media(max-width:1050px){.import-row{grid-template-columns:1fr 1fr}.import-status{grid-column:1/-1}}@media(max-width:720px){.import-row{grid-template-columns:1fr}.import-status{grid-column:auto}}
+
+.geo-error{min-height:340px;display:grid;place-items:center;padding:30px;text-align:center;color:#9aacc1;font:12px var(--mono);line-height:1.8}
