@@ -15,8 +15,8 @@
     $("geoMap").hidden = next !== "map";
     $("geoGlobe").hidden = next !== "globe";
     document.querySelectorAll(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.view === next));
-    if (next === "map") { ensureMap(); drawMap(); setTimeout(() => map && map.invalidateSize(), 80); }
-    if (next === "globe") { ensureGlobe(); drawGlobe(); }
+    if (next === "map") { ensureMap(); if(!map){$("geoMap").innerHTML='<div class="geo-error">Map library could not load. Check your internet connection or use the schematic view.</div>';return} drawMap(); setTimeout(() => map && map.invalidateSize(), 80); }
+    if (next === "globe") { ensureGlobe(); if(!globe){$("geoGlobe").innerHTML='<div class="geo-error">3D globe library could not load. Check your internet connection or use the 2D map.</div>';return} drawGlobe(); }
   }
   function ensureMap() {
     if (map || !window.L) return;
