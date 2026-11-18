@@ -42,7 +42,7 @@
     s.network.nodes.forEach(n => {
       const p=nodes[n[0]], isOrigin=n[0]===s.origin, isDest=n[0]===s.destination;
       const marker=L.circleMarker([p.lat,p.lng],{radius:isOrigin||isDest?8:5,color:isOrigin?"#e5b66c":isDest?"#67c9e8":"#d7e2ee",fillColor:isOrigin?"#e5b66c":isDest?"#67c9e8":"#26394e",fillOpacity:1,weight:2}).addTo(map);
-      marker.bindPopup("<b>"+n[0]+" · "+n[1]+"</b><br>Illustrative demo node"); mapLayers.push(marker);
+      marker.bindPopup("<b>"+n[0]+" · "+n[1]+"</b><br>"+(Number.isFinite(n[4])?"Imported geographic network node":"Illustrative demo node")+"<br>"+p.lat.toFixed(5)+", "+p.lng.toFixed(5)); mapLayers.push(marker);
     });
     if(mapLayers.length){const bounds=L.featureGroup(mapLayers).getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(0.12),{maxZoom:16})}
     $("geoMap").setAttribute("aria-label","Interactive geographic visualization of the network");
