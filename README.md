@@ -122,3 +122,14 @@ Open the app through a local static server as described above. The geographic vi
 3. Support user-imported GeoJSON, GPX and network datasets.
 4. Add globe-to-map transitions, route elevation and time-aware flow playback.
 5. Add domain adapters for real transport, utility and data-network feeds.
+
+
+## Real geographic network ingestion
+
+- **OpenStreetMap area loader:** search a place, download nearby road ways through Nominatim and Overpass, build a coordinate-aware graph in the browser, then optimize routes over the downloaded road segments.
+- **GeoJSON / GPX import:** load LineString or MultiLineString GeoJSON networks, or GPX tracks/routes, and route over their actual coordinates.
+- **Geographic rendering:** the map fits imported network bounds; the globe uses the same coordinates and selected route.
+
+OSM road distances use the haversine formula. Travel-time weights use road-class speed defaults or tagged maxspeed where available; these are estimates, not live traffic ETAs. One-way OSM roads are directed. GeoJSON/GPX estimated time, cost and energy are derived from distance. Public geocoding and Overpass services have usage limits; retry later or import a local file if unavailable. OSM data is © OpenStreetMap contributors. Internet access is required for OSM downloads, map tiles and globe assets.
+
+The shortest-path engine uses a binary min-heap Dijkstra traversal. Alternative paths remain bounded heuristic candidates rather than a complete K-shortest-path guarantee. Networks above 500 nodes are explored in map/globe views rather than the schematic SVG.
