@@ -25,6 +25,11 @@ jobs:
           node --check geo-view.js
           node --check config.js
           node --check workers/path-worker.js
+          node --check src/osm/cache.js
+          node --check src/osm/overpass.js
+          node --check src/feeds/maritime.js
+          node tests/overpass.test.cjs
+          node tests/maritime.test.cjs
           node tests/path-worker.test.cjs
       - name: Verify application entry points
         run: |
@@ -34,6 +39,9 @@ jobs:
           test -s geo-view.js
           test -s config.js
           test -s workers/path-worker.js
+          test -s src/osm/cache.js
+          test -s src/osm/overpass.js
+          test -s src/feeds/maritime.js
           grep -q 'href="styles.css' index.html
           grep -q 'src="app.js"' index.html
           grep -q 'src="geo-view.js"' index.html
