@@ -13,7 +13,7 @@
     }
     subscribe(listener) { this.listeners.add(listener); listener(this.snapshot()); return () => this.listeners.delete(listener); }
     snapshot() { return { status: this.status, ships: [...this.ships.values()], count: this.ships.size, lastMessageAt: this.lastMessageAt }; }
-    emit() { const value = this.snapshot(); this.listeners.forEach(fn => { try { fn(value); } catch (_) {} }); }
+    emit() { const value = this.snapshot(); this.listeners.forEach(fn => { try { fn(value); } catch (_) {} }); window.dispatchEvent(new CustomEvent("pipeweb:maritime:update", { detail: value })); }
     connect(bbox = DEFAULT_BBOX) {
       this.disconnect(false); this.intentionalClose = false; this.active = true;
       this.bbox = bbox; this.status = "CONNECTING"; this.emit();
