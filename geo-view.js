@@ -4,6 +4,9 @@
   const $ = (id) => document.getElementById(id);
   const center = { lat: 16.5062, lng: 80.6480 };
   let mode = "schematic", map = null, globe = null, mapLayers = [], globeReady = false;
+  const AIRCRAFT_API = (window.PIPEWEB_CONFIG && window.PIPEWEB_CONFIG.aircraftApi) || "https://opensky-network.org/api/states/all";
+  const AIRCRAFT_REFRESH_MS = 15 * 60 * 1000;
+  let aircraftCache = [], aircraftFetchedAt = 0, aircraftBusy = false, aircraftTimer = null;
   const worldLayers = {
     air: { title:"GLOBAL AIR CONNECTIVITY", description:"Illustrative connections between major world aviation hubs.", hubs:[
       ["New York",40.7128,-74.006],["London",51.5074,-0.1278],["Dubai",25.2048,55.2708],["Singapore",1.3521,103.8198],["Tokyo",35.6762,139.6503],["Los Angeles",34.0522,-118.2437],["São Paulo",-23.5505,-46.6333],["Johannesburg",-26.2041,28.0473],["Sydney",-33.8688,151.2093],["Delhi",28.6139,77.209],["Paris",48.8566,2.3522],["Toronto",43.6532,-79.3832],["Mexico City",19.4326,-99.1332],["Istanbul",41.0082,28.9784],["Doha",25.2854,51.531]
@@ -31,7 +34,7 @@
     $("worldControls").hidden = next !== "world";
     document.querySelectorAll(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.view === next));
     if (next === "map") { ensureMap(); if(!map){$("geoMap").innerHTML='<div class="geo-error">Map library could not load. Check your internet connection or use the schematic view.</div>';return} drawMap(); setTimeout(() => map && map.invalidateSize(), 80); }
-    if (next === "globe" || next === "world") { ensureGlobe(); if(!globe){$("geoGlobe").innerHTML='<div class="geo-error">3D globe library could not load. Check your internet connection or use the 2D map.</div>';return} if(next==="world")drawWorld();else drawGlobe(); }
+    if (next === "globe" || next === "world") { ensureGlobe(); if(!globe){$("geoGlobe").innerHTML='<div class="geo-error">3D globe library could not load. Check your internet connection or use the 2D map.</div>';return} if(next==="world")drawWorld();else drawLiveEarth(); }
   }
   function ensureMap() {
     if (map || !window.L) return;
@@ -82,7 +85,7 @@
       .showAtmosphere(true).atmosphereColor("#4c9bba").atmosphereAltitude(0.18)
       .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
       .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
-      .pointAltitude(0.015).pointRadius(0.45).pointColor(d=>d.color)
+      .pointAltitude(d=>d.altitudeM==null?0.008:Math.min(0.035,0.006+d.altitudeM/450000)).pointRadius(d=>d.onGround?0.12:0.2).pointColor(d=>d.color)
       .arcColor(d=>d.color).arcAltitude(0.18).arcStroke(0.7)
       .arcDashLength(0.45).arcDashGap(0.25).arcDashAnimateTime(1800);
     globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
@@ -98,6 +101,57 @@
     $("networkName").textContent=layer.title;
     $("nodeCount").textContent=String(hubs.length)+" GLOBAL HUBS · "+String(arcs.length)+" ILLUSTRATIVE LINKS";
     $("worldDescription").textContent=layer.description+" Not live traffic or infrastructure telemetry.";
+  }
+  function setAircraftStatus(state, message) {
+    const pill=$("aircraftStatus");
+    if(pill){pill.className="feed-pill "+(state==="LIVE"?"feed-live":state==="OFFLINE"?"feed-error":"feed-loading");pill.innerHTML="<i></i> "+state;}
+    if(message&&$("aircraftCoverage"))$("aircraftCoverage").textContent=message;
+  }
+  function renderAircraft() {
+    if(!globe)return;
+    const points=aircraftCache.map(a=>({
+      lat:a.latitude,lng:a.longitude,callsign:a.callsign||a.icao24,
+      country:a.originCountry||"Unknown country",altitudeM:a.altitudeM,
+      onGround:a.onGround,velocityMs:a.velocityMs,headingDeg:a.headingDeg,
+      color:a.onGround?"#e9b96b":"#70dcff"
+    }));
+    globe.pointsData(points).pointLabel(d=>"<b>"+String(d.callsign).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+"</b><br>"+String(d.country).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))+"<br>"+(d.altitudeM==null?"Altitude unavailable":Math.round(d.altitudeM).toLocaleString()+" m")+" · "+(d.velocityMs==null?"Speed unavailable":Math.round(d.velocityMs*3.6)+" km/h"));
+    globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
+  }
+  async function fetchAircraft(force=false) {
+    if(aircraftBusy)return;
+    if(!force&&aircraftFetchedAt&&Date.now()-aircraftFetchedAt<AIRCRAFT_REFRESH_MS){renderAircraft();return;}
+    aircraftBusy=true;setAircraftStatus("CONNECTING","REQUESTING OPENSKY");
+    try{
+      const response=await fetch(AIRCRAFT_API,{headers:{accept:"application/json"},cache:"no-store"});
+      if(!response.ok)throw new Error("OpenSky returned HTTP "+response.status);
+      const payload=await response.json();
+      const parsed=Array.isArray(payload.aircraft)?payload.aircraft.filter(a=>Number.isFinite(a.longitude)&&Number.isFinite(a.latitude)):((Array.isArray(payload.states)?payload.states:[]).flatMap(v=>{
+        if(!Number.isFinite(v[5])||!Number.isFinite(v[6]))return [];
+        return [{icao24:v[0],callsign:(v[1]||"").trim(),originCountry:v[2],longitude:v[5],latitude:v[6],altitudeM:Number.isFinite(v[7])?v[7]:null,onGround:Boolean(v[8]),velocityMs:Number.isFinite(v[9])?v[9]:null,headingDeg:Number.isFinite(v[10])?v[10]:null}];
+      }));
+      if(payload.status==="OFFLINE")throw new Error(payload.error||"Aircraft provider offline");
+      aircraftCache=parsed;aircraftFetchedAt=Date.now();renderAircraft();
+      $("aircraftCount").textContent=parsed.length.toLocaleString();
+      $("aircraftUpdated").textContent=new Date(aircraftFetchedAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+      $("nodeCount").textContent=parsed.length.toLocaleString()+" OBSERVED AIRCRAFT";
+      $("networkName").textContent="LIVE AIRCRAFT POSITIONS · OPENSKY NETWORK";
+      setAircraftStatus("LIVE","OBSERVED POSITIONS · 15-MINUTE REFRESH");
+      $("aircraftSource").textContent="Source: OpenSky Network · ADS-B state vectors · receiver coverage is incomplete";
+    }catch(error){
+      const stale=aircraftCache.length>0;
+      setAircraftStatus(stale?"STALE":"OFFLINE",stale?"SHOWING LAST SUCCESSFUL SNAPSHOT":"LIVE FEED UNAVAILABLE");
+      $("aircraftSource").textContent="OpenSky feed unavailable: "+(error&&error.message?error.message:"network error")+". No simulated aircraft are shown.";
+      if(!stale){$("aircraftCount").textContent="—";$("aircraftUpdated").textContent="—";}
+    }finally{aircraftBusy=false;}
+  }
+  function drawLiveEarth() {
+    if(!globe)return;
+    if(!aircraftCache.length){setAircraftStatus("CONNECTING","FETCHING LIVE POSITIONS");}
+    else renderAircraft();
+    fetchAircraft();
+    if(aircraftTimer)clearInterval(aircraftTimer);
+    aircraftTimer=setInterval(()=>{if(mode==="globe")fetchAircraft(true);},AIRCRAFT_REFRESH_MS);
   }
   function drawGlobe() {
     const s=state();if(!s||!globe)return;
@@ -117,6 +171,6 @@
   
   document.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.view)));
   $("worldFlowType").addEventListener("change",drawWorld);
-  window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();if(mode==="globe")drawGlobe();if(mode==="world")drawWorld();});
+  window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();if(mode==="globe")drawLiveEarth();if(mode==="world")drawWorld();});
   window.addEventListener("resize",()=>{if(mode==="map"&&map)map.invalidateSize();if((mode==="globe"||mode==="world")&&globe)globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);});
 })();

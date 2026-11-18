@@ -18,7 +18,8 @@ Pipe-Web is an interactive path-intelligence workspace for exploring networks, c
 - **Interactive flow:** select a route card to emphasize that path on the schematic, 2D map and 3D globe.
 - **Network domains:** roads, fluid pipelines, rail, data transport and robot navigation.
 - **Geographic input:** import GeoJSON / GPX or load road geometry from OpenStreetMap.
-- **Global globe:** explore illustrative worldwide air, digital, maritime and energy connection layers.
+- **Live Earth:** plot observed aircraft positions from the OpenSky Network on a rotatable 3D Earth, with source, refresh time and feed status.
+- **World flows:** explore illustrative digital, maritime and energy connections; these remain clearly separated from live telemetry.
 
 ## Route ranking
 
@@ -50,8 +51,8 @@ The schematic view works locally. Map tiles, the 3D globe assets, geocoding and 
 
 - **Schematic:** clear network topology with ranked, animated route overlays.
 - **2D Map:** geographic network geometry, origin / destination markers and three ranked route overlays.
-- **3D Globe:** rotate and explore the same ranked routes on a globe.
-- **World flows:** conceptual global connections across air, digital, maritime and energy domains.
+- **Live Earth:** rotate a 3D Earth showing aircraft positions observed by OpenSky. The browser refreshes at a conservative 15-minute interval and displays LIVE / OFFLINE state.
+- **World flows:** conceptual global connections across digital, maritime and energy domains. These are not live operational feeds.
 
 World-flow arcs are illustrative examples, not verified live flight paths, vessel tracks, submarine cables, energy interconnectors or operational traffic.
 
@@ -69,6 +70,7 @@ See [LIVE-DATA.md](LIVE-DATA.md) for the free-first data-source inventory, worki
 | File | Responsibility |
 |---|---|
 | `index.html` | Application structure and controls |
+| `config.js` | Public data endpoint configuration (no secrets) |
 | `styles.css` | Responsive interface, route palette and motion |
 | `app.js` | Graph data, Dijkstra routing, alternatives, ranking and schematic rendering |
 | `geo-view.js` | Leaflet map and Globe.gl visualization |
