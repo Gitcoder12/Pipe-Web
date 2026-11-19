@@ -30,26 +30,36 @@
     status(shipCount ? "🚢 " + shipLabel + " · ✈️ " + airLabel : "Connecting to live feed…", shipCount ? "live" : "connecting");
   }
   function initGlobe() {
-    if (isMobile() || !window.Globe || state.globe) return;
+    if (state.globe) return true;
+    if (!window.Globe) return false;
     const host = $("liveGlobe");
-    state.globe = Globe()(host)
-      .rendererConfig({ preserveDrawingBuffer: true, antialias: true, alpha: false })
-      .backgroundColor("#0a0a0a")
-      .showAtmosphere(true).atmosphereColor("#287da3").atmosphereAltitude(0.16)
-      .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-night.jpg")
-      .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
-      .showGraticules(false)
-      .pointLat(d => d.lat).pointLng(d => d.lng)
-      .pointColor(d => d.color).pointRadius(d => d.radius || 0.14)
-      .pointAltitude(0.002).pointResolution(8)
-      .pointLabel(d => d.label)
-      .onPointClick(d => toast(d.label || "Observed vessel"));
-    state.globe.width(host.clientWidth).height(host.clientHeight);
-    state.globe.controls().autoRotate = true;
-    state.globe.controls().autoRotateSpeed = 0.3;
-    state.globe.controls().enableDamping = true;
-    state.globe.controls().dampingFactor = 0.08;
-    state.globe.pointOfView({ lat: 22, lng: 10, altitude: 2.1 }, 0);
+    if (!host || host.clientWidth < 2 || host.clientHeight < 2) return false;
+    try {
+      state.globe = Globe()(host)
+        .rendererConfig({ preserveDrawingBuffer: true, antialias: !isMobile(), alpha: false, powerPreference: "high-performance" })
+        .backgroundColor("#071321")
+        .showAtmosphere(true).atmosphereColor("#287da3").atmosphereAltitude(0.16)
+        .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
+        .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
+        .showGraticules(false)
+        .pointLat(d => d.lat).pointLng(d => d.lng)
+        .pointColor(d => d.color).pointRadius(d => d.radius || 0.14)
+        .pointAltitude(0.002).pointResolution(8)
+        .pointLabel(d => d.label)
+        .onPointClick(d => toast(d.label || "Observed vessel"))
+        .onGlobeReady(() => status("Earth loaded · waiting for live observations", "connecting"));
+      state.globe.width(host.clientWidth).height(host.clientHeight);
+      state.globe.controls().autoRotate = true;
+      state.globe.controls().autoRotateSpeed = 0.3;
+      state.globe.controls().enableDamping = true;
+      state.globe.controls().dampingFactor = 0.08;
+      state.globe.pointOfView({ lat: 22, lng: 10, altitude: 2.1 }, 0);
+      return true;
+    } catch (error) {
+      console.error("Pipe-Web globe initialization failed:", error);
+      state.globe = null;
+      return false;
+    }
   }
   function initMap() {
     if (!window.L || state.map) return;
@@ -96,8 +106,25 @@
     $("liveMap").hidden = view !== "2d";
     $("viewToggle").innerHTML = view === "3d" ? "🌐 <span>3D</span>" : "🗺️ <span>2D</span>";
     $("viewToggle").setAttribute("aria-label", view === "3d" ? "Switch to 2D map" : "Switch to 3D globe");
-    if (view === "3d") { initGlobe(); renderGlobe(); }
-    else { initMap(); renderMap(); requestAnimationFrame(() => state.map && state.map.invalidateSize()); }
+    if (view === "3d") {
+      if (!initGlobe()) {
+        state.view = "2d";
+        $("liveGlobe").hidden = true;
+        $("liveMap").hidden = false;
+        $("viewToggle").innerHTML = "🗺️ <span>2D</span>";
+        $("viewToggle").setAttribute("aria-label", "Switch to 3D globe");
+        initMap();
+        renderMap();
+        requestAnimationFrame(() => state.map && state.map.invalidateSize());
+        status("3D globe unavailable · showing the live 2D map", "error");
+        return;
+      }
+      renderGlobe();
+    } else {
+      initMap();
+      renderMap();
+      requestAnimationFrame(() => state.map && state.map.invalidateSize());
+    }
   }
   function connectSea() {
     const feed = window.PipeWebMaritime;
