@@ -28,6 +28,9 @@
     }
     const host = $("liveMap");
     if (!host) return false;
+    // Leaflet must measure a visible container during construction.
+    host.hidden = false;
+    $("liveGlobe").hidden = true;
     try {
       state.map = L.map(host, {
         zoomControl: false, worldCopyJump: true, preferCanvas: true,
