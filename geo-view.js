@@ -27,7 +27,7 @@
     backdropGlobe.controls().autoRotate = true;
     backdropGlobe.controls().autoRotateSpeed = 0.22;
   }
-  initEarthBackdrop();
+  // The hidden backdrop globe was consuming a WebGL context before the landing globe initialized.
   let aircraftCache = [], aircraftFetchedAt = 0, aircraftBusy = false, aircraftTimer = null;
   const worldLayers = {
     air: { title:"GLOBAL AIR CONNECTIVITY", description:"Illustrative connections between major world aviation hubs.", hubs:[
