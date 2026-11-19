@@ -41,7 +41,7 @@
         this.source=payload.source|| (TYPE==="air"?"Aircraft provider":"Rail provider");
         this.lastFetchedAt=payload.fetchedAt||new Date(now).toISOString();
         this.status="LIVE";
-        if(window.PipeWebRecorder) records.forEach(record=>window.PipeWebRecorder.record(TYPE==="air"?"air":"ship",record).catch(()=>{}));
+        if(window.PipeWebRecorder) records.forEach(record=>window.PipeWebRecorder.record(TYPE==="air"?"air":TYPE==="rail"?"rail":"ship",record).catch(()=>{}));
       } catch(error) { this.status=this.tracks.size?"STALE":"OFFLINE"; this.error=error.message||"Feed unavailable"; }
       finally { this.busy=false; this.emit(); }
     }

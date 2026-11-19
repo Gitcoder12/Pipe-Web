@@ -4,7 +4,7 @@
   const DATABASE_NAME = "pipe-web-history";
   const DATABASE_VERSION = 1;
   const STORE_NAME = "observations";
-  const VALID_TYPES = new Set(["ship", "air"]);
+  const VALID_TYPES = new Set(["ship", "air", "rail"]);
   let databasePromise = null;
 
   function openDatabase() {
