@@ -1,10 +1,10 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import vm from "node:vm";
-import test from "node:test";
+const assert = require("node:assert/strict");
+const { readFileSync } = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+const test = require("node:test");
 
-const workerPath = fileURLToPath(new URL("../workers/path-worker.js", import.meta.url));
+const workerPath = path.join(__dirname, "../workers/path-worker.js");
 const workerSource = readFileSync(workerPath, "utf8");
 
 function runWorker(data) {
