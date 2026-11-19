@@ -42,7 +42,7 @@ Global hub-to-hub examples are rendered as animated Bézier ribbons using [Leafl
 - **Roads:** geographic OpenStreetMap road graph can be loaded for a searched area in the route planner. Requests are bounded to protect public Overpass services.
 - **Ships:** live AIS positions are source-dependent and currently use the provider's default Europe/North Atlantic bounding box.
 - **Rail, pipelines, and digital infrastructure:** layer concepts exist, but verified global geometry and live telemetry are not yet fully integrated.
-- **Aircraft:** requires a configured Worker endpoint; no synthetic aircraft are displayed.
+- **Aircraft:** the Worker integration remains in the repository, but the current 2D interface does not render an aircraft-position overlay.
 - **Terrain, satellite imagery, global freight volumes, and corridor speeds:** not yet integrated as live analysis datasets.
 - **Schematic networks:** illustrative only. Their weights are not real-world measurements.
 
@@ -74,7 +74,6 @@ Then open `http://localhost:8000`.
 
 ## Data attribution
 
-- Natural Earth geographic data is public domain; World Atlas redistributes Natural Earth boundaries as TopoJSON.
 - OpenStreetMap data is © OpenStreetMap contributors and is available under the Open Database License (ODbL).
 - AIS and aircraft data remain subject to their respective provider terms and coverage limitations.
 
