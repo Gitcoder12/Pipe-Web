@@ -377,3 +377,10 @@ body.legacy-route .legacy-workspace{display:block!important}
 
 .mobile-layers-toggle{display:none;pointer-events:auto;border-radius:12px;color:#f4f6f8;padding:11px 14px;font:500 12px system-ui;cursor:pointer}
 @media(max-width:767px){.mobile-layers-toggle{display:block;align-self:flex-start}.landing-bottom{flex-direction:row;align-items:flex-end;justify-content:space-between}.live-status{margin-left:auto}}
+
+/* Corridor-first landing map: paths are the visual priority, never vehicle dots. */
+.pipeweb-flow-line { animation: pipeFlowDash 18s linear infinite; }
+@keyframes pipeFlowDash { to { stroke-dashoffset: -190; } }
+@media (prefers-reduced-motion: reduce) {
+  .pipeweb-flow-line { animation: none; }
+}
