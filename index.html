@@ -7,15 +7,15 @@
   <meta name="description" content="Pipe-Web — a global intelligence system for discovering the fastest paths through connected networks.">
   <title>Pipe-Web — Live Global Movement</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=globe-first-1">
+  <link rel="stylesheet" href="styles.css?v=flow-first-20261119">
 </head>
 <body>
 <div id="earthBackdrop" aria-hidden="true"></div>
 <div class="ambient-grain" aria-hidden="true"></div>
 
 <div id="landingRoot" class="landing-root">
-  <div id="liveGlobe" class="live-globe" aria-label="Live global ship positions"></div>
-  <div id="liveMap" class="live-map" aria-label="Live ship positions on a 2D map" hidden></div>
+  <div id="liveGlobe" class="live-globe" aria-label="Live global movement flow trails"></div>
+  <div id="liveMap" class="live-map" aria-label="Live movement trails on a 2D map" hidden></div>
   <div class="landing-vignette" aria-hidden="true"></div>
   <header class="landing-top glass">
     <div class="landing-brand-group">
@@ -39,17 +39,17 @@
     <strong>Settings</strong>
     <label><input id="tiltToggle" type="checkbox"> Enable phone tilt navigation</label>
     <p>On mobile, tilt gently pans the 2D map. Motion access may require permission.</p>
-    <span id="airLayerNote">Aircraft layer is unavailable until an aircraft Worker endpoint is configured.</span>
+    <span id="airLayerNote">Air and rail flows require the free-data Worker URL in config.js.</span>
   </section>
   <div class="landing-bottom">
     <button id="mobileLayersToggle" class="mobile-layers-toggle glass" type="button">☷ Layers</button>
     <div id="layerTray" class="layer-tray glass" aria-label="Map layers">
-      <button class="layer-pill active" data-layer="sea" aria-pressed="true">Sea</button>
-      <button class="layer-pill" data-layer="road" aria-pressed="false">Road</button>
-      <button class="layer-pill" data-layer="air" aria-pressed="false">Air</button>
-      <button class="layer-pill" data-layer="rail" aria-pressed="false">Rail</button>
-      <button class="layer-pill" data-layer="pipe" aria-pressed="false">Pipe</button>
-      <button class="layer-pill" data-layer="digital" aria-pressed="false">Digital</button>
+      <button class="layer-pill active" data-layer="sea" aria-pressed="true">Sea flow</button>
+      <button class="layer-pill" data-layer="road" aria-pressed="false">Road flow</button>
+      <button class="layer-pill" data-layer="air" aria-pressed="false">Air flow</button>
+      <button class="layer-pill" data-layer="rail" aria-pressed="false">Rail flow</button>
+      <button class="layer-pill" data-layer="pipe" aria-pressed="false">Energy flow</button>
+      <button class="layer-pill" data-layer="digital" aria-pressed="false">Data flow</button>
     </div>
     <div class="live-status glass" role="status" aria-live="polite">
       <span id="feedPulse" class="feed-pulse"></span>
@@ -84,16 +84,16 @@
   <main class="main">
   <section class="live-flow-section" id="live-flows">
     <div class="flow-intro">
-      <div><span class="live-kicker">PIPE-WEB / GLOBAL FLOW INTELLIGENCE</span><h1 class="live-title">The world, in motion.</h1><p>Choose a network. Follow the movement of goods and services across the planet.</p></div>
+      <div><span class="live-kicker">PIPE-WEB / GLOBAL FLOW INTELLIGENCE</span><h1 class="live-title">The world, in motion.</h1><p>Follow verified movement trails across networks with accessible public data.</p></div>
       <div class="live-feed-summary"><span class="live-indicator"></span><span id="flowFeedStatus">SELECT A NETWORK TO EXPLORE</span></div>
     </div>
     <div class="network-sections" id="flowNetwork">
-      <button class="network-card sea-card active" data-network="ships"><span class="network-card-index">01 / MARITIME</span><strong>Ships</strong><small>Oil · Coal · LNG · Containers</small><span class="network-card-arrow">↗</span></button>
-      <button class="network-card road-card" data-network="road"><span class="network-card-index">02 / ROAD FREIGHT</span><strong>Trucks</strong><small>Food · Retail · Industrial goods</small><span class="network-card-arrow">↗</span></button>
-      <button class="network-card air-card" data-network="aircraft"><span class="network-card-index">03 / AVIATION</span><strong>Aircraft</strong><small>Air cargo · Passenger networks</small><span class="network-card-arrow">↗</span></button>
-      <button class="network-card rail-card" data-network="rail"><span class="network-card-index">04 / RAIL</span><strong>Rail</strong><small>Bulk freight · Intermodal · Passenger</small><span class="network-card-arrow">↗</span></button>
-      <button class="network-card pipe-card" data-network="pipelines"><span class="network-card-index">05 / ENERGY</span><strong>Pipelines</strong><small>Crude oil · Gas · Refined products</small><span class="network-card-arrow">↗</span></button>
-      <button class="network-card digital-card" data-network="digital"><span class="network-card-index">06 / DIGITAL</span><strong>Digital flows</strong><small>Data · Cloud · Network services</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card sea-card active" data-network="ships"><span class="network-card-index">01 / MARITIME</span><strong>Sea flow</strong><small>Oil · Coal · LNG · Containers</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card road-card" data-network="road"><span class="network-card-index">02 / ROAD FREIGHT</span><strong>Road flow</strong><small>Food · Retail · Industrial goods</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card air-card" data-network="aircraft"><span class="network-card-index">03 / AVIATION</span><strong>Air flow</strong><small>Air cargo · Passenger networks</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card rail-card" data-network="rail"><span class="network-card-index">04 / RAIL</span><strong>Rail flow</strong><small>Bulk freight · Intermodal · Passenger</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card pipe-card" data-network="pipelines"><span class="network-card-index">05 / ENERGY</span><strong>Energy flow</strong><small>Crude oil · Gas · Refined products</small><span class="network-card-arrow">↗</span></button>
+      <button class="network-card digital-card" data-network="digital"><span class="network-card-index">06 / DIGITAL</span><strong>Data flow</strong><small>Data · Cloud · Network services</small><span class="network-card-arrow">↗</span></button>
     </div>
     <div class="flow-filter-bar">
       <div class="flow-filter-title"><span>EXPLORE SELECTED NETWORK</span><b id="flowMapTitle">SHIPS / MARITIME</b></div>
@@ -113,7 +113,7 @@
       <div><span>REPORTED TRADE VALUE</span><b id="flowTotalValue">—</b><small>USD · selected country and category</small></div>
       <div><span>TRADE PARTNERS</span><b id="flowPartnerCount">—</b><small>Returned partner records</small></div>
       <div><span>DATA PERIOD</span><b id="flowDataPeriod">—</b><small id="flowFreshness">Waiting for source response</small></div>
-      <div><span>LIVE VEHICLES</span><b id="flowVesselCount">NOT CONNECTED</b><small id="flowVesselNote">Live provider not configured</small></div>
+      <div><span>LIVE FLOW TRAILS</span><b id="flowVesselCount">NOT CONNECTED</b><small id="flowVesselNote">Live provider not configured</small></div>
     </div>
     <div class="flow-table-wrap"><div class="flow-table-heading"><b>Largest reported flows</b><span id="flowTableNote">Select a network and load data</span></div><div id="flowTable"><div class="flow-empty">Select a category and load reported trade statistics to explore real partner values.</div></div></div>
   </section>
@@ -182,10 +182,8 @@
         <div class="map-stage">
           <div class="map-stage-heading"><span>NETWORK VISUALIZATION</span><span class="stage-coordinates">GLOBAL / LOCAL</span></div>
           <div class="view-switch" role="group" aria-label="Visualization mode">
-            <button class="view-btn active" data-view="schematic">Schematic</button>
-            <button class="view-btn" data-view="map">2D Map</button>
-            <button class="view-btn" data-view="globe">Live Earth</button>
-            <button class="view-btn" data-view="world">World flows · Not yet implemented</button>
+            <button class="view-btn active" data-view="map">2D flow</button>
+            <button class="view-btn" data-view="globe">3D flow</button>
           </div>
           <div id="worldControls" class="world-controls" hidden>
             <label class="place-label"><span>GLOBAL FLOW LAYER</span><select id="worldFlowType"><option value="air">Air connectivity</option><option value="digital">Digital backbone</option><option value="maritime">Maritime corridors</option><option value="energy">Energy connections</option></select></label>
@@ -200,11 +198,11 @@
           <div id="geoMap" class="geo-view" hidden></div>
           <div id="geoGlobe" class="geo-view globe-view" hidden>
             <div class="earth-hud">
-              <div class="earth-hud-top"><span class="hud-kicker">EARTH / LIVE AIRCRAFT</span><span id="aircraftStatus" class="feed-pill feed-loading"><i></i> CONNECTING</span></div>
+              <div class="earth-hud-top"><span class="hud-kicker">EARTH / OBSERVED AIR FLOW</span><span id="aircraftStatus" class="feed-pill feed-loading"><i></i> CONNECTING</span></div>
               <div class="earth-stats">
-                <div><strong id="aircraftCount">—</strong><span>OBSERVED AIRCRAFT</span></div>
+                <div><strong id="aircraftCount">—</strong><span>FLOW SEGMENTS</span></div>
                 <div><strong id="aircraftUpdated">—</strong><span>LAST UPDATE</span></div>
-                <div><strong>15 MIN</strong><span>REFRESH WINDOW</span></div>
+                <div><strong>60 MIN</strong><span>REFRESH WINDOW</span></div>
               </div>
               <p id="aircraftSource">Source: OpenSky Network · ADS-B observations · coverage is incomplete</p>
             </div>
@@ -235,10 +233,10 @@
 <div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://unpkg.com/globe.gl"></script>
-<script src="config.js"></script>
-  <script src="src/osm/cache.js"></script>
-  <script src="src/osm/overpass.js"></script><script src="app.js"></script><script src="geo-view.js"></script><script src="src/feeds/recorder.js"></script><script src="src/feeds/maritime.js"></script>
-<script src="flow-explorer.js"></script>
-<script src="src/ui/landing.js"></script>
+<script src="config.js?v=flow-first-20261119"></script>
+  <script src="src/osm/cache.js?v=flow-first-20261119"></script>
+  <script src="src/osm/overpass.js?v=flow-first-20261119"></script><script src="app.js?v=flow-first-20261119"></script><script src="geo-view.js?v=flow-first-20261119"></script><script src="src/feeds/recorder.js?v=flow-first-20261119"></script><script src="src/feeds/maritime.js?v=flow-first-20261119"></script><script src="src/feeds/aircraft.js?v=flow-first-20261119"></script><script src="src/feeds/rail.js?v=flow-first-20261119"></script>
+<script src="flow-explorer.js?v=flow-first-20261119"></script>
+<script src="src/ui/landing.js?v=flow-first-20261119"></script>
 </body>
 </html>

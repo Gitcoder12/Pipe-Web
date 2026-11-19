@@ -316,6 +316,8 @@ h1 span{color:var(--accent)}
 :root{--landing-bg:#0a0a0a;--landing-glass:rgba(0,0,0,.5);--landing-border:rgba(255,255,255,.08)}
 html,body{width:100%;height:100%;min-height:100%;margin:0;background:var(--landing-bg);overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 #earthBackdrop,.ambient-grain{display:none!important}
+#networkMap{display:none!important}
+.view-btn[data-view="schematic"],.view-btn[data-view="world"]{display:none!important}
 .legacy-workspace{display:none!important}
 body.legacy-route{overflow:auto;height:auto;min-height:100%;background:#080b0e}
 body.legacy-route #landingRoot{display:none}
@@ -377,3 +379,12 @@ body.legacy-route .legacy-workspace{display:block!important}
 
 .mobile-layers-toggle{display:none;pointer-events:auto;border-radius:12px;color:#f4f6f8;padding:11px 14px;font:500 12px system-ui;cursor:pointer}
 @media(max-width:767px){.mobile-layers-toggle{display:block;align-self:flex-start}.landing-bottom{flex-direction:row;align-items:flex-end;justify-content:space-between}.live-status{margin-left:auto}}
+
+/* Flow-first rendering: observed tracks only, no vehicle or endpoint markers. */
+.sea-card:before,.road-card:before,.air-card:before,.rail-card:before,.pipe-card:before,.digital-card:before{
+ background-image:linear-gradient(135deg,rgba(69,190,181,.28),rgba(103,138,230,.18),rgba(196,135,224,.22))!important;opacity:.48
+}
+.pipeweb-flow-track{filter:drop-shadow(0 0 3px currentColor);stroke-linecap:round;stroke-linejoin:round}
+.flow-map-line{stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:10 7;animation:pipeFlowDash 2.4s linear infinite;filter:drop-shadow(0 0 3px currentColor)}
+.pipeweb-route-flow{stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px currentColor)}
+@keyframes pipeFlowDash{to{stroke-dashoffset:-34}}
