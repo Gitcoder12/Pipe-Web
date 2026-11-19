@@ -88,3 +88,27 @@ Then open `http://localhost:8000`.
 ## License
 
 See [LICENSE](LICENSE). Third-party datasets retain their own licenses and attribution requirements.
+
+
+---
+
+## Comparison with Existing Open-Source Projects
+
+Pipe-Web is documented as a global path and movement-intelligence explorer combining a 3D Earth view, public geographic layers and route comparisons by time, distance, cost or energy. The following projects provide established mapping, routing and globe-visualization foundations.
+
+| Project | Established focus | Relationship to Pipe-Web |
+|---|---|---|
+| [OpenStreetMap](https://github.com/openstreetmap/openstreetmap-website) | Collaborative geographic database and mapping ecosystem | A key source for road and infrastructure geometry; Pipe-Web's intended distinction is combining multiple transport/network layers with route-objective comparison. |
+| [OSRM](https://github.com/Project-OSRM/osrm-backend) | High-performance routing on road networks | A mature road-routing engine; Pipe-Web's documented planner adds multiple cost/energy objectives and broader network-layer exploration, but should not claim equivalent routing performance. |
+| [Globe.gl](https://github.com/vasturiano/globe.gl) | Web-based 3D globe visualization | A rendering foundation used for the globe view; Pipe-Web's product layer combines it with external data and path/network exploration. |
+
+### Where Pipe-Web is different
+- **Multi-network view:** the concept brings road, rail, pipeline, maritime and other network layers into a common geographic interface.
+- **Multiple route objectives:** the planner documents fastest-time, shortest-distance, lowest-cost and lowest-energy modes.
+- **Data transparency:** the README distinguishes observed source data, mapped geometry, estimates and schematic layers instead of presenting all paths as live movement.
+
+### Where established projects are stronger
+OpenStreetMap has far broader geographic coverage; OSRM has mature routing algorithms and production experience; Globe.gl is a dedicated visualization library. Pipe-Web's external data availability and global coverage remain dependent on provider uptime, API limits, geographic completeness and configuration.
+
+### Evidence and limitations
+Show provider, retrieval timestamp, geographic coverage, cache age and whether a value is observed or estimated. Do not present OSM geometry as live congestion, an AIS default region as global ship coverage, or schematic links as measured infrastructure. Benchmark route quality and performance against a defined dataset before claiming superiority. This is a scope comparison, not a global-coverage or routing-accuracy benchmark.
