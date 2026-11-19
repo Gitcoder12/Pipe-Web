@@ -207,7 +207,7 @@
   $("menuToggle").addEventListener("click", () => openMenu($("landingMenu").hidden));
   $("settingsToggle").addEventListener("click", () => openSettings($("landingSettings").hidden));
   $("viewToggle").hidden = true;
-  $("screenshotBtn").addEventListener("click", () => toast("Use your browser screenshot shortcut to capture the map."));
+  $("screenshotBtn").addEventListener("click", () => { if (state.map) state.map.setView([22, 15], 2, { animate: true }); });
   $("tiltToggle").addEventListener("change", enableTilt);
   $("layerTray").addEventListener("click", event => {
     const button = event.target.closest(".layer-pill"); if (!button) return;
