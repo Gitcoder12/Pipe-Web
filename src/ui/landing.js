@@ -167,7 +167,7 @@
     openMenu(false);
     requestAnimationFrame(()=>{
       const el=$(target);if(el)el.scrollIntoView({behavior:"auto",block:"start"});
-      if(target==="flowMap")window.dispatchEvent(new CustomEvent("pipeweb:section-visible",{detail:{id:"flowMap"}}));
+      window.dispatchEvent(new CustomEvent("pipeweb:section-visible",{detail:{id:target}}));
     });
     return true;
   }
