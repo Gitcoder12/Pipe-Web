@@ -117,7 +117,6 @@
     select.replaceChildren();
 
     if (kind === "goods") {
-      appendOption(select, "all", "All chapters in this family · preview capped at 500 rows");
       group.chapters.forEach((item) => appendOption(select, item.code, item.code + " · " + item.label));
     } else {
       appendOption(select, group.code, "All " + group.label.toLowerCase());
@@ -305,6 +304,14 @@
     });
     stopAircraftPolling();
     vesselLayer.clearLayers();
+    clearReportedLayers();
+    lastTradeRows = [];
+    $("flowTable").innerHTML = '<div class="flow-empty">Network changed. Select a goods or services subcategory and show reported trade.</div>';
+    $("flowTotalValue").textContent = "—";
+    $("flowPartnerCount").textContent = "—";
+    $("flowDataPeriod").textContent = "—";
+    $("flowFreshness").textContent = "Waiting for source response";
+    $("flowMapPeriod").textContent = "NO TRADE QUERY YET";
     if (window.PipeWebMaritime && next !== "ships") {
       window.PipeWebMaritime.disconnect();
       lastMaritimeBox = "";
@@ -345,11 +352,29 @@
     reportedLayers = [];
   }
 
+  function aggregatePartnerRows(rows) {
+    const totals = new Map();
+    rows.forEach((row) => {
+      const key = String(row.partnerCode ?? "unknown");
+      let item = totals.get(key);
+      if (!item) {
+        item = { partnerCode: row.partnerCode, partnerDesc: row.partnerDesc || "Partner " + key, primaryValue: 0, netWgt: 0, records: 0 };
+        totals.set(key, item);
+      }
+      item.primaryValue += Number(row.primaryValue || 0);
+      item.netWgt += Number(row.netWgt || 0);
+      item.records += 1;
+      if (row.partnerDesc) item.partnerDesc = row.partnerDesc;
+    });
+    return Array.from(totals.values()).sort((a, b) => b.primaryValue - a.primaryValue);
+  }
+
   function plotReportedTrade(rows, reporterCode) {
     clearReportedLayers();
     const origin = reporters[reporterCode] || reporters["356"];
-    const mapped = rows.filter((row) => partnerCoords.has(String(Number(row.partnerCode))) && Number(row.primaryValue) > 0)
-      .sort((a, b) => Number(b.primaryValue) - Number(a.primaryValue))
+    const partnerTotals = aggregatePartnerRows(rows);
+    const mapped = partnerTotals
+      .filter((row) => partnerCoords.has(String(Number(row.partnerCode))) && Number(row.primaryValue) > 0)
       .slice(0, 35);
     const arcs = [];
     const color = modeColours[network] || "#1687b2";
@@ -363,9 +388,10 @@
         className: "flow-map-line"
       }).addTo(map);
       line.bindTooltip(
-        escapeHtml(origin.name) + " → " + escapeHtml(row.partnerDesc || "Partner") +
-        "<br>" + money(row.primaryValue) + " reported trade value" +
-        (kind === "goods" ? "<br>Mode filter: " + modeOfTransportDescription() : "<br>EBOPS service trade")
+        escapeHtml(origin.name) + " ↔ " + escapeHtml(row.partnerDesc || "Partner") +
+        "<br>" + money(row.primaryValue) + " reported value" +
+        "<br>Trade partner relationship · not a physical transport route" +
+        (kind === "goods" ? "<br>Mode of transport: " + modeOfTransportDescription() : "<br>EBOPS service trade")
       );
       reportedLayers.push(line);
       arcs.push(line);
@@ -386,11 +412,13 @@
     if (arcs.length) map.fitBounds(L.featureGroup(arcs).getBounds().pad(0.25), { maxZoom: 3 });
     else map.setView([origin.lat, origin.lng], 2);
 
-    return mapped;
+    return { mapped, partnerTotals };
   }
 
   function renderTradeTable(rows, period, payload) {
-    const html = rows.slice(0, 15).map((row, index) =>
+    const partnerTotals = aggregatePartnerRows(rows);
+    const tableRows = partnerTotals.slice(0, 15);
+    const html = tableRows.map((row, index) =>
       "<tr><td>" + String(index + 1).padStart(2, "0") + "</td>" +
       "<td>" + escapeHtml(row.partnerDesc || "Partner") + "</td>" +
       "<td>" + (row.netWgt ? number(row.netWgt) + " kg" : "—") + "</td>" +
@@ -401,16 +429,18 @@
       ? '<table class="flow-table"><thead><tr><th>RANK</th><th>TRADE PARTNER</th><th>NET WEIGHT</th><th>REPORTED VALUE (USD)</th></tr></thead><tbody>' + html + "</tbody></table>"
       : '<div class="flow-empty">No partner records are available for this filter. Check whether this reporter publishes the selected category and mode-of-transport breakdown.</div>';
 
-    $("flowTableNote").textContent = rows.length + " returned records · public preview limit applies";
+    $("flowTableNote").textContent = rows.length + " returned rows · " + partnerTotals.length + " partners · preview may cap at 500 rows";
     $("flowTotalValue").textContent = money(rows.reduce((sum, row) => sum + Number(row.primaryValue || 0), 0));
-    $("flowPartnerCount").textContent = number(rows.length);
+    $("flowPartnerCount").textContent = number(partnerTotals.length);
     $("flowDataPeriod").textContent = period;
-    $("flowFreshness").textContent = "Official reported data · not live telemetry";
+    $("flowFreshness").textContent = "Subtotal of returned preview rows · not a world total";
     $("flowMapPeriod").textContent = "REPORTED PERIOD: " + period;
     const classification = kind === "goods" ? "HS 2022 (H6)" : "EBOPS 2010 (EB10)";
     $("flowMapSource").textContent = "SOURCE: UN COMTRADE · " + classification +
       (kind === "goods" && goodsModeCodes[network] ? " · MOT " + goodsModeCodes[network] : "");
-    if (payload && payload.elapsedTime) $("flowFreshness").textContent = "UN Comtrade response " + payload.elapsedTime + " · reported period " + period;
+    if (payload && payload.elapsedTime) $("flowFreshness").textContent =
+      "Preview subtotal · " + payload.elapsedTime + " response · up to 500 rows";
+    return partnerTotals;
   }
 
   async function loadTrade() {
@@ -435,7 +465,7 @@
       period,
       flowCode: direction
     });
-    if (code !== "all") params.set("cmdCode", code);
+    params.set("cmdCode", code);
     if (kind === "goods" && goodsModeCodes[network]) params.set("motCode", goodsModeCodes[network]);
 
     const url = "https://comtradeapi.un.org/public/v1/" + endpoint + "/" + typePath + "?" + params.toString();
@@ -457,11 +487,14 @@
         throw new Error("No records returned. The reporter may not publish this category or mode-of-transport breakdown.");
       }
       lastTradeRows = rows;
-      const mapped = plotReportedTrade(rows, reporter);
-      renderTradeTable(rows, period, payload);
+      const plotted = plotReportedTrade(rows, reporter);
+      const partnerTotals = renderTradeTable(rows, period, payload);
       updateTitle();
-      setStatus("UN COMTRADE · " + rows.length + " REPORTED RECORDS · " + direction, true);
-      if (!mapped.length) $("flowTableNote").textContent = rows.length + " records · partner coordinates unavailable for map; see table";
+      setStatus("UN COMTRADE · " + rows.length + " RETURNED ROWS · " + partnerTotals.length + " PARTNERS · " + direction, true);
+      if (!plotted.mapped.length) {
+        $("flowMapTitle").textContent += " · TABLE DATA ONLY";
+        $("flowTableNote").textContent = rows.length + " returned rows · " + partnerTotals.length + " partners · map coordinates unavailable; see table";
+      }
       if (kind === "goods" && goodsModeCodes[network]) {
         $("flowSourceNote").textContent = "Mode-of-transport filter: " + modeOfTransportDescription() +
           ". UN Comtrade only supplies this breakdown where the reporting country publishes it. Values are annual reported trade, not live shipments.";
