@@ -2,7 +2,7 @@
 (() => {
 "use strict";
 const $=id=>document.getElementById(id);
-const state={map:null,layer:null,ribbonLayers:[],toastTimer:null};
+const state={map:null,layer:null,ribbonLayers:[],ribbonRenderer:null,toastTimer:null};
 const makeRoute=(name,kind,points,labels=[])=>({name,kind,points,labels});
 const corridors={
 sea:{label:"SEA ROUTES",routes:[
@@ -49,6 +49,7 @@ const host=$("liveMap");if(!host)return false;host.hidden=false;
 try{state.map=L.map(host,{zoomControl:false,worldCopyJump:true,preferCanvas:true,attributionControl:true,minZoom:2,maxZoom:18}).setView([22,15],2);
 L.control.zoom({position:"bottomright"}).addTo(state.map);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{minZoom:2,maxZoom:19,crossOrigin:true,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'}).addTo(state.map);
+state.ribbonRenderer=typeof L.svg==="function"?L.svg({padding:.5}).addTo(state.map):null;
 requestAnimationFrame(()=>state.map&&state.map.invalidateSize());return true;
 }catch(error){console.error("Pipe-Web map initialization failed:",error);status("Map initialization failed");return false;}
 }
@@ -62,8 +63,8 @@ function drawFlowPath(from,to,options){
  const color=options.color,reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
  const points=[{lat:Number(from[0]),lng:Number(from[1])},{lat:Number(to[0]),lng:Number(to[1])}];
  const css="pipeweb-flow-ribbon pipeweb-flow-ribbon--"+options.mode;let layer;
- if(typeof L.bezier==="function"){
-   const settings={curve:"arc",deep:5,color,weight:2.7,opacity:.9,dashArray:"10 6",lineCap:"round",lineJoin:"round",className:css};
+ if(typeof L.bezier==="function"&&state.ribbonRenderer){
+   const settings={curve:"arc",deep:5,color,weight:2.7,opacity:.9,dashArray:"10 6",lineCap:"round",lineJoin:"round",className:css,renderer:state.ribbonRenderer};
    if(!reduce){settings.animate=1500;settings.duration=8000;settings.easing="flight";settings.travel=1;settings.loop=true;}
    layer=L.bezier({path:[points],icon:reduce?undefined:{svg:flowIconSvg(color),size:18,rotate:true,scaleWithZoom:false,className:"pipeweb-flow-token"}},settings).addTo(state.map);
    if(layer&&typeof layer.eachLayer==="function")layer.eachLayer(part=>part.bindTooltip(options.label,{sticky:true}));
