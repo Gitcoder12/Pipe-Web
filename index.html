@@ -7,14 +7,13 @@
   <meta name="description" content="Pipe-Web — a global intelligence system for discovering the fastest paths through connected networks.">
   <title>Pipe-Web — Live Global Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=live-osm-3">
+  <link rel="stylesheet" href="styles.css?v=flow-ribbons-1">
 </head>
 <body>
 <div id="earthBackdrop" aria-hidden="true"></div>
 <div class="ambient-grain" aria-hidden="true"></div>
 
 <div id="landingRoot" class="landing-root">
-  <div id="liveGlobe" class="live-globe" aria-label="Global flow corridor map"></div>
   <div id="liveMap" class="live-map" aria-label="Global flow paths map" hidden></div>
   <div class="landing-vignette" aria-hidden="true"></div>
   <aside class="flow-legend glass" aria-label="Live data legend"><span><i class="legend-line fast"></i> Live mapped infrastructure</span><small>OpenStreetMap data · not live traffic or speed rankings</small></aside>
@@ -24,7 +23,6 @@
       <a class="landing-brand" href="#/" aria-label="Pipe-Web home">Pipe-Web</a>
     </div>
     <div class="landing-actions">
-      <button id="viewToggle" class="landing-control" type="button" aria-label="Switch globe view">🌐 <span>3D</span></button>
       <button id="screenshotBtn" class="landing-control" type="button" aria-label="Reset map view">⌖ <span>Reset map</span></button>
       <button id="settingsToggle" class="landing-control" type="button" aria-label="Open settings" aria-expanded="false">⚙️ <span>Settings</span></button>
     </div>
@@ -185,8 +183,7 @@
           <div class="view-switch" role="group" aria-label="Visualization mode">
             <button class="view-btn active" data-view="schematic">Schematic</button>
             <button class="view-btn" data-view="map">2D Map</button>
-            <button class="view-btn" data-view="globe">Live Earth</button>
-            <button class="view-btn" data-view="world">World flows · Not yet implemented</button>
+            <button class="view-btn" data-view="world">World flows</button>
           </div>
           <div id="worldControls" class="world-controls" hidden>
             <label class="place-label"><span>GLOBAL FLOW LAYER</span><select id="worldFlowType"><option value="air">Air connectivity</option><option value="digital">Digital backbone</option><option value="maritime">Maritime corridors</option><option value="energy">Energy connections</option></select></label>
@@ -199,18 +196,6 @@
             <button id="animateBtn" class="small-btn">PAUSE FLOW</button>
           </div>
           <div id="geoMap" class="geo-view" hidden></div>
-          <div id="geoGlobe" class="geo-view globe-view" hidden>
-            <div class="earth-hud">
-              <div class="earth-hud-top"><span class="hud-kicker">EARTH / LIVE AIRCRAFT</span><span id="aircraftStatus" class="feed-pill feed-loading"><i></i> CONNECTING</span></div>
-              <div class="earth-stats">
-                <div><strong id="aircraftCount">—</strong><span>OBSERVED AIRCRAFT</span></div>
-                <div><strong id="aircraftUpdated">—</strong><span>LAST UPDATE</span></div>
-                <div><strong>15 MIN</strong><span>REFRESH WINDOW</span></div>
-              </div>
-              <p id="aircraftSource">Source: OpenSky Network · ADS-B observations · coverage is incomplete</p>
-            </div>
-            <div class="earth-hud-bottom"><span>DRAG TO ROTATE</span><span>SCROLL TO ZOOM</span><span id="aircraftCoverage">WAITING FOR FEED</span></div>
-          </div>
           <svg id="networkMap" viewBox="0 0 900 440" role="img" aria-label="Interactive network diagram showing origin, destination and optimized flow paths"></svg>
           <div class="map-caption"><span>FIG. 01</span><span id="mapHint">Green = best · Yellow = medium · Red = slowest</span><span>PIPE-WEB / CARTOGRAPHY</span></div>
         </div>
@@ -235,7 +220,7 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="https://unpkg.com/globe.gl" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/globe.gl';"></script>
+<script src="https://unpkg.com/leaflet.bezier@2.1.0/dist/leaflet.bezier.global.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script src="config.js"></script>
   <script src="src/osm/cache.js"></script>
