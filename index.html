@@ -7,7 +7,7 @@
   <meta name="description" content="Pipe-Web — a global intelligence system for discovering the fastest paths through connected networks.">
   <title>Pipe-Web — Live Global Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=flow-paths-1">
+  <link rel="stylesheet" href="styles.css?v=flow-paths-2">
 </head>
 <body>
 <div id="earthBackdrop" aria-hidden="true"></div>
@@ -17,6 +17,7 @@
   <div id="liveGlobe" class="live-globe" aria-label="Global flow corridor map"></div>
   <div id="liveMap" class="live-map" aria-label="Global flow paths map" hidden></div>
   <div class="landing-vignette" aria-hidden="true"></div>
+  <aside class="flow-legend glass" aria-label="Route legend"><span><i class="legend-line fast"></i> Faster</span><span><i class="legend-line slow"></i> Slower</span><span><i class="legend-line special"></i> Special / low-use</span><small>Conceptual route classes · not live speed data</small></aside>
   <header class="landing-top glass">
     <div class="landing-brand-group">
       <button id="menuToggle" class="landing-icon" aria-label="Open navigation" aria-expanded="false">☰</button>
@@ -240,6 +241,6 @@
   <script src="src/osm/cache.js"></script>
   <script src="src/osm/overpass.js"></script><script src="app.js"></script><script src="geo-view.js"></script><script src="src/feeds/recorder.js"></script><script src="src/feeds/maritime.js"></script>
 <script src="flow-explorer.js"></script>
-<script src="src/ui/landing.js?v=flow-paths-1"></script>
+<script src="src/ui/landing.js?v=flow-paths-2"></script>
 </body>
 </html>
