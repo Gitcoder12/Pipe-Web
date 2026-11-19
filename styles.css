@@ -384,3 +384,15 @@ body.legacy-route .legacy-workspace{display:block!important}
 @media (prefers-reduced-motion: reduce) {
   .pipeweb-flow-line { animation: none; }
 }
+
+/* Flow intelligence visual hierarchy */
+.flow-legend{position:absolute;z-index:7;top:88px;left:18px;display:flex;align-items:center;gap:15px;padding:10px 13px;border-radius:12px;color:#dce2e7;font:11px system-ui;pointer-events:none}
+.flow-legend span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.flow-legend small{color:#9da7b0;font-size:9px;margin-left:4px}
+.legend-line{display:inline-block;width:22px;height:0;border-top:3px solid;border-radius:2px}
+.legend-line.fast{border-color:#38c978}.legend-line.slow{border-color:#ed5b5b}.legend-line.special{border-color:#aab3bd;border-top-style:dashed}
+.pipeweb-place-label{background:transparent;border:0;white-space:nowrap;pointer-events:none}
+.pipeweb-place-label span{display:inline-block;padding:2px 5px;border-radius:4px;background:rgba(8,12,16,.78);border:1px solid rgba(255,255,255,.12);color:#e4e9ed;font:10px/1.2 system-ui;letter-spacing:.02em;text-shadow:0 1px 2px #000}
+.pipeweb-route-tooltip{background:rgba(8,12,16,.92);border:1px solid rgba(255,255,255,.16);color:#f2f4f6;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.pipeweb-route-tooltip:before{border-top-color:rgba(8,12,16,.92)}
+@media(max-width:767px){.flow-legend{top:74px;left:10px;right:10px;gap:9px;flex-wrap:wrap;padding:8px 10px}.flow-legend small{flex-basis:100%;margin-left:0}.flow-legend span{font-size:10px}.pipeweb-place-label span{font-size:9px;padding:1px 3px}}
