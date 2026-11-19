@@ -2,19 +2,17 @@
 
 **Global path and movement intelligence.** Explore connected networks, inspect geographic data, and compare candidate paths by time, distance, cost, or energy.
 
-## Earth and online geographic data
+## 2D map and online geographic data
 
-The 3D Earth view uses the Globe.gl renderer with an online Blue Marble texture. It loads public vector overlays when the providers are reachable:
+Pipe-Web uses Leaflet as its map engine. The map-first landing page opens directly into a 2D world map using OpenStreetMap tiles. External datasets load at runtime; availability depends on the network, provider uptime, CORS policy, and usage limits.
 
 | Dataset | Source | Current use |
 |---|---|---|
-| Country boundaries | [Natural Earth via World Atlas TopoJSON](https://github.com/topojson/world-atlas) | Global country outlines on the 3D globe |
-| Major rivers | [Natural Earth 1:110m physical vectors](https://www.naturalearthdata.com/downloads/110m-physical-vectors/) | Global river paths on the 3D globe |
+| Base map tiles | [OpenStreetMap tile service](https://tile.openstreetmap.org/) | Global 2D map background |
 | Road geometry | [OpenStreetMap via Overpass API](https://wiki.openstreetmap.org/wiki/Overpass_API) | Fetch a bounded area, build a routable road graph, cache locally |
-| Vessel positions | [OpenSeaFeed AIS stream](https://openseafeed.com/) | Live ship position observations when the stream is reachable |
-| Aircraft positions | OpenSky-compatible Worker endpoint | Requires a user-deployed endpoint in `config.js`; not enabled by default |
+| Vessel positions | [OpenSeaFeed AIS stream](https://openseafeed.com/) | Live ship position observations in the flow explorer when the stream is reachable |
 
-The globe falls back to the 2D map if the 3D renderer cannot initialize. External datasets are loaded at runtime; availability depends on the user's network, provider uptime, CORS policy, and usage limits.
+The schematic network view remains available alongside the Leaflet 2D Map and World flows views. Pipe-Web no longer initializes a 3D globe renderer.
 
 ## Current landing map data integration
 
@@ -31,14 +29,20 @@ The map-first landing page queries the public OpenStreetMap Overpass API for inf
 
 Queries are viewport-bounded and run after zooming in. Map movement requests the visible area again. Overpass availability, response time, and coverage depend on public infrastructure and service limits. Do not poll aggressively.
 
-This landing-map integration is separate from the legacy AIS and aircraft modules described below. Those modules are not currently rendered by the map-first landing page. The Overpass timestamp indicates when the query completed; it does not mean the underlying OpenStreetMap edits were made at that time.
+This landing-map integration is separate from the AIS layer in the lower flow explorer. The map-first landing page shows mapped infrastructure plus schematic ribbons; it does not display live vessel or aircraft positions. The Overpass timestamp indicates when the query completed; it does not mean the underlying OpenStreetMap edits were made at that time.
+
+## Animated 2D flow ribbons
+
+Global hub-to-hub examples are rendered as animated Bézier ribbons using [Leaflet.bezier](https://github.com/lifeeka/leaflet.bezier) v2.1.0 (MIT; no runtime dependencies beyond Leaflet). Ribbon colour identifies the selected transport layer: maritime, road, air, rail, pipeline, or digital. A small directional token travels along each segment; reduced-motion preferences disable movement.
+
+**Data boundary:** the curated hub-to-hub ribbon examples are schematic/illustrative. Their animation does not mean a vehicle, shipment, or data packet was observed, and ribbon colour is not a fastest/slowest ranking. On supported zoom levels, OpenStreetMap Overpass geometry is drawn separately as mapped infrastructure. Those OSM ways are not live traffic or verified end-to-end routing paths.
 
 ## Network coverage and honest status
 
 - **Roads:** geographic OpenStreetMap road graph can be loaded for a searched area in the route planner. Requests are bounded to protect public Overpass services.
 - **Ships:** live AIS positions are source-dependent and currently use the provider's default Europe/North Atlantic bounding box.
 - **Rail, pipelines, and digital infrastructure:** layer concepts exist, but verified global geometry and live telemetry are not yet fully integrated.
-- **Aircraft:** requires a configured Worker endpoint; no synthetic aircraft are displayed.
+- **Aircraft:** the Worker integration remains in the repository, but the current 2D interface does not render an aircraft-position overlay.
 - **Terrain, satellite imagery, global freight volumes, and corridor speeds:** not yet integrated as live analysis datasets.
 - **Schematic networks:** illustrative only. Their weights are not real-world measurements.
 
@@ -70,13 +74,12 @@ Then open `http://localhost:8000`.
 
 ## Data attribution
 
-- Natural Earth geographic data is public domain; World Atlas redistributes Natural Earth boundaries as TopoJSON.
 - OpenStreetMap data is © OpenStreetMap contributors and is available under the Open Database License (ODbL).
 - AIS and aircraft data remain subject to their respective provider terms and coverage limitations.
 
 ## Development priorities
 
-1. Keep the Earth renderer reliable and provide a 2D fallback.
+1. Keep the Leaflet 2D map reliable and retain the schematic view as a fallback.
 2. Make every visible layer load a named, documented source or clearly show that it is unavailable.
 3. Add rail, pipeline, waterways, terrain, and satellite sources with explicit geographic coverage.
 4. Add source timestamps, freshness indicators, and provenance to every dataset.
