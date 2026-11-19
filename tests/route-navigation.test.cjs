@@ -1,0 +1,12 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs");
+const ui=fs.readFileSync("src/ui/landing.js","utf8"),geo=fs.readFileSync("geo-view.js","utf8"),styles=fs.readFileSync("styles.css","utf8");
+assert.match(ui,/window\.addEventListener\("hashchange",syncRoute\)/);
+assert.match(ui,/window\.dispatchEvent\(new CustomEvent\("pipeweb:section-visible",\{detail:\{id:target\}\}\)\)/);
+assert.match(ui,/const onSection=route\(\);if\(!onSection\)startLanding\(\)/);
+assert.ok(ui.lastIndexOf("const onSection=route()")>ui.indexOf("function startLanding()"));
+assert.match(geo,/pipeweb:section-visible/);
+assert.doesNotMatch(geo,/\n\s*initEarthBackdrop\(\);/);
+assert.match(styles,/body\.legacy-route #landingRoot\{display:none\}/);
+assert.match(styles,/#networkMap\{display:none!important\}/);
+console.log("Navigation tests passed: route event and no hidden startup globe.");

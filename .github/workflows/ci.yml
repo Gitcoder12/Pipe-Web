@@ -28,11 +28,15 @@ jobs:
           node --check src/osm/cache.js
           node --check src/osm/overpass.js
           node --check src/feeds/maritime.js
+          node --check src/feeds/aircraft.js
+          node --check src/feeds/rail.js
           node --check src/feeds/recorder.js
           node --check src/ui/landing.js
           node --check workers/live-api.js
           node tests/overpass.test.cjs
           node tests/maritime.test.cjs
+          node tests/route-navigation.test.cjs
+          node tests/live-api.test.cjs
           node tests/recorder.test.cjs
           node tests/landing.test.cjs
           node tests/platform-integrity.test.cjs
@@ -48,6 +52,11 @@ jobs:
           test -s src/osm/cache.js
           test -s src/osm/overpass.js
           test -s src/feeds/maritime.js
+          test -s src/feeds/aircraft.js
+          test -s src/feeds/rail.js
+          test -s DATA-SOURCES.md
+          test -s tests/route-navigation.test.cjs
+          test -s tests/live-api.test.cjs
           test -s src/feeds/recorder.js
           test -s src/ui/landing.js
           test -s workers/live-api.js
