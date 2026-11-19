@@ -76,7 +76,7 @@
       <a class="header-link" href="#intelligence">Path intelligence</a>
     </nav>
     <div class="header-right">
-      <span class="system-status"><i></i> SYSTEM ONLINE</span>
+      <span class="system-status"><i></i> FEED STATUS: SOURCE-DEPENDENT</span>
       <button class="icon-btn" id="resetBtn" title="Reset network" aria-label="Reset network">RESET</button>
     </div>
   </header>
@@ -161,7 +161,7 @@
         <div class="planner-advanced">
           <label class="check-label"><input type="checkbox" id="avoidCongestion" checked> Avoid congested segments</label>
           <label class="check-label"><input type="checkbox" id="showAlternatives" checked> Compare alternatives</label>
-          <span class="hint">Demo network metrics · import real network data for analysis</span>
+          <span class="hint">Imported network geometry only. Demo weights are illustrative, not telemetry.</span>
         </div>
         <div class="import-row">
           <label class="import-label">IMPORT NETWORK <input id="networkFile" type="file" accept=".geojson,.json,.gpx,application/geo+json,application/gpx+xml"></label>
@@ -185,11 +185,11 @@
             <button class="view-btn active" data-view="schematic">Schematic</button>
             <button class="view-btn" data-view="map">2D Map</button>
             <button class="view-btn" data-view="globe">Live Earth</button>
-            <button class="view-btn" data-view="world">World flows</button>
+            <button class="view-btn" data-view="world">World flows · Not yet implemented</button>
           </div>
           <div id="worldControls" class="world-controls" hidden>
             <label class="place-label"><span>GLOBAL FLOW LAYER</span><select id="worldFlowType"><option value="air">Air connectivity</option><option value="digital">Digital backbone</option><option value="maritime">Maritime corridors</option><option value="energy">Energy connections</option></select></label>
-            <span id="worldDescription" class="import-status">Illustrative global connections · not live operational data</span>
+            <span id="worldDescription" class="import-status">Not yet implemented — verified global flow layers are not connected</span>
           </div>
           <div class="map-legend">
             <span><i class="legend-line rank-fast"></i><span id="rankLegendOne">Fastest</span></span>
