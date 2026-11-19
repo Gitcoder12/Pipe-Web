@@ -2,6 +2,7 @@
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"\']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[char]));
   const domains = {
     road:{name:"METRO / URBAN ROAD NETWORK",nodes:[["A","Origin",70,220],["B","North Gate",205,95],["C","West Hub",205,220],["D","South Gate",205,350],["E","Central",390,95],["F","Midtown",390,220],["G","South Hub",390,350],["H","East Gate",575,95],["I","East Hub",575,220],["J","South East",575,350],["K","Destination",800,220],["L","Airport Link",710,60]],edges:[["A","B",8,5,4,2],["A","C",5,3,2,1],["A","D",7,4,3,2],["B","E",5,3,2,1],["B","F",8,4,3,3],["C","E",7,4,2,2],["C","F",4,2,2,1],["C","G",8,4,3,2],["D","F",7,3,3,2],["D","G",4,2,2,1],["E","H",4,2,2,1],["E","I",7,4,3,2],["F","H",7,3,3,2],["F","I",4,2,2,1],["F","J",8,5,4,3],["G","I",7,3,2,2],["G","J",4,2,2,1],["H","K",8,4,3,2],["H","L",3,1,1,1],["I","K",5,2,2,1],["J","K",6,3,2,2],["L","K",6,3,2,1]],congested:["B-F","E-I","F-J"],units:{time:"min",distance:"km",cost:"cr",energy:"kWh"}},
     pipeline:{name:"REGIONAL / FLUID TRANSMISSION GRID",nodes:[["A","Source",70,220],["B","Valve 01",210,95],["C","Junction 02",210,220],["D","Valve 03",210,350],["E","Pump 01",390,95],["F","Manifold",390,220],["G","Pump 02",390,350],["H","Junction 04",575,95],["I","Junction 05",575,220],["J","Valve 06",575,350],["K","Terminal",800,220],["L","Reserve",710,60]],edges:[["A","B",7,4,3,2],["A","C",4,2,2,1],["A","D",8,5,4,2],["B","E",4,2,2,1],["B","F",7,4,3,2],["C","E",6,3,2,2],["C","F",3,2,1,1],["C","G",8,4,3,2],["D","F",7,4,3,2],["D","G",4,2,2,1],["E","H",3,2,1,1],["E","I",7,4,3,2],["F","H",7,4,3,2],["F","I",4,2,2,1],["F","J",8,5,4,3],["G","I",6,3,2,2],["G","J",4,2,2,1],["H","K",7,4,3,2],["H","L",3,1,1,1],["I","K",5,2,2,1],["J","K",6,3,2,2],["L","K",6,3,2,1]],congested:["B-F","E-I","F-J"],units:{time:"min",distance:"km",cost:"cr",energy:"kWh"}},
@@ -48,7 +49,21 @@
       });
     });
   }
-  function populateSelects(){const ns=domains[domain].nodes,opts=ns.map(n=>`<option value="${n[0]}">${n[0]} — ${n[1]}</option>`).join("");$("origin").innerHTML=opts;$("destination").innerHTML=opts;$("origin").value=ns[0]?.[0]||"";$("destination").value=ns[ns.length-1]?.[0]||""}
+  function populateSelects(){
+    const ns=domains[domain].nodes;
+    for(const id of ["origin","destination"]){
+      const select=$(id),fragment=document.createDocumentFragment();
+      ns.forEach((node)=>{
+        const option=document.createElement("option");
+        option.value=String(node[0]);
+        option.textContent=`${node[0]} — ${node[1]}`;
+        fragment.appendChild(option);
+      });
+      select.replaceChildren(fragment);
+    }
+    $("origin").value=ns[0]?.[0]||"";
+    $("destination").value=ns[ns.length-1]?.[0]||"";
+  }
   async function optimize(){
     const a=$("origin").value,b=$("destination").value;
     if(a===b){paths=[];selected=0;renderMap();renderResults();$("mapHint").textContent="Origin and destination are the same location."; $("resultCount").textContent="SAME ENDPOINT";toast("Choose two different endpoints.");return}
@@ -88,7 +103,7 @@
     if(best){best.edges.forEach(e=>{const a=nodes[e[0]],b=nodes[e[1]],x=(a.x+b.x)/2,y=(a.y+b.y)/2;out+=`<text class="edge-label" x="${x}" y="${y-8}" text-anchor="middle">${metric(e,$("objective").value)} ${domains[domain].units[$("objective").value]}</text>`;});}
     domains[domain].nodes.forEach(n=>{
       const [id,name,x,y]=n,kind=id===$("origin").value?"origin":id===$("destination").value?"destination":paths.some(p=>p.ids.includes(id))?"on-route":"";
-      out+=`<g class="node ${kind}" transform="translate(${x} ${y})"><circle r="9"/><text y="25">${id} · ${name}</text></g>`;
+      out+=`<g class="node ${kind}" transform="translate(${x} ${y})"><circle r="9"/><text y="25">${id} · ${escapeHtml(name)}</text></g>`;
     });
     svg.innerHTML=out;$("networkName").textContent=domains[domain].name;
     $("nodeCount").textContent=`${domains[domain].nodes.length} NODES · ${domains[domain].edges.length} LINKS`;
