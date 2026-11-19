@@ -98,12 +98,14 @@
       <div class="flow-filter-title"><span>EXPLORE SELECTED NETWORK</span><b id="flowMapTitle">SHIPS / MARITIME</b></div>
       <div class="flow-filter-controls">
         <div class="flow-toggle" role="group" aria-label="Goods or services"><button class="active" data-kind="goods">Goods</button><button data-kind="services">Services</button></div>
-        <label class="flow-select-label">COMMODITY / CATEGORY<select id="flowCommodity"><option value="2709">Crude oil</option><option value="2701">Coal</option><option value="271111">Liquefied natural gas</option><option value="2710">Refined petroleum</option><option value="all">All goods</option></select></label>
-        <label class="flow-select-label">COUNTRY<select id="flowReporter"><option value="356">India</option><option value="156">China</option><option value="842">United States</option><option value="276">Germany</option><option value="392">Japan</option></select></label>
-        <label class="flow-select-label">YEAR<select id="flowPeriod"><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option></select></label>
+        <label class="flow-select-label" id="flowCategoryLabel">PRODUCT FAMILY<select id="flowCategory"></select></label>
+        <label class="flow-select-label" id="flowCommodityLabel">PRODUCT SUBCATEGORY<select id="flowCommodity"></select></label>
+        <label class="flow-select-label">TRADE DIRECTION<select id="flowDirection"><option value="X">Exports</option><option value="M">Imports</option></select></label>
+        <label class="flow-select-label">REPORTER COUNTRY<select id="flowReporter"><option value="356">India</option><option value="156">China</option><option value="842">United States</option><option value="276">Germany</option><option value="392">Japan</option></select></label>
+        <label class="flow-select-label">ANNUAL PERIOD<select id="flowPeriod"><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option></select></label>
         <button id="loadTradeFlows" class="flow-load-button">SHOW FLOWS ↗</button>
       </div>
-      <p class="flow-source-note">Reported trade values are not live cargo telemetry. Live vessel locations and verified cargo details require an AIS data provider.</p>
+      <p id="flowSourceNote" class="flow-source-note">Reported trade statistics are not live cargo telemetry. Vessel positions are observed AIS reports; cargo details are not inferred from position data.</p>
     </div>
     <div class="flow-map-toolbar"><div><span class="map-eyebrow">GLOBAL MAP / SELECT A FLOW TO INSPECT</span></div><div class="flow-map-legend"><span><i class="legend-live"></i>Reported trade link</span><span><i class="legend-muted"></i>Network context</span></div></div>
     <div id="flowMap" aria-label="Interactive global map showing selected network flows"></div>
@@ -225,6 +227,7 @@
 <script src="config.js"></script>
   <script src="src/osm/cache.js"></script>
   <script src="src/osm/overpass.js"></script><script src="app.js"></script><script src="geo-view.js"></script><script src="src/feeds/recorder.js"></script><script src="src/feeds/maritime.js"></script>
+<script src="src/data/trade-taxonomy.js"></script>
 <script src="flow-explorer.js"></script>
 <script src="src/ui/landing.js?v=live-osm-3"></script>
 </body>
