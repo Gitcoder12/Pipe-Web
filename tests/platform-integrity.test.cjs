@@ -17,6 +17,8 @@ assert.match(geo,/function ensureMap\(/);
 assert.match(geo,/function drawWorld\(/);
 assert.match(geo,/function drawFlowPath\(/);
 assert.match(geo,/L\.bezier\(/);
+assert.match(geo,/ribbonRenderer=typeof L\.svg/);
+assert.match(geo,/renderer:ribbonRenderer/);
 assert.match(geo,/setView\(\[22,15\],2\)/);
 assert.match(geo,/light_all/);
 assert.match(geo,/not verified operational routes or live traffic/);
