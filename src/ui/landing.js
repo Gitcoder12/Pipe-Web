@@ -60,13 +60,18 @@ const liveLayers={
  rail:{label:"RAIL NETWORK",selector:'way["railway"~"rail|narrow_gauge"]'},
  pipe:{label:"PIPELINE NETWORK",selector:'way["man_made"="pipeline"]'}
 };
-let liveRequest=0;
+let liveRequest=0,activeRequest=null,renderTimer=null;
 function setFeedState(message,mode="loading"){
  const el=$("liveCounts");if(el)el.textContent=message;
  const pulse=$("feedPulse");if(pulse)pulse.className="feed-pulse"+(mode==="live"?" is-live":mode==="error"?" is-error":"");
 }
+function scheduleRender(name){
+ clearTimeout(renderTimer);
+ renderTimer=setTimeout(()=>render(name),650);
+}
 async function render(name){
  if(!state.map)return;
+ if(activeRequest){activeRequest.abort();activeRequest=null;}
  if(state.layer){state.map.removeLayer(state.layer);state.layer=null;}
  const spec=liveLayers[name];
  if(!spec){
@@ -82,10 +87,12 @@ async function render(name){
  const west=bounds.getWest(),east=bounds.getEast();
  const bbox=[south,west,north,east].join(",");
  const requestId=++liveRequest;
+ const controller=new AbortController();activeRequest=controller;
+ const timeout=setTimeout(()=>controller.abort(),30000);
  setFeedState("Loading current OpenStreetMap "+spec.label.toLowerCase()+"…");
  const query='[out:json][timeout:25];('+spec.selector+'('+bbox+'););out geom;';
  try{
-   const response=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:"data="+encodeURIComponent(query),signal:AbortSignal.timeout(30000)});
+   const response=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:"data="+encodeURIComponent(query),signal:controller.signal});
    if(!response.ok)throw new Error("Overpass HTTP "+response.status);
    const data=await response.json();
    if(requestId!==liveRequest)return;
@@ -104,11 +111,11 @@ async function render(name){
  }catch(error){
    if(requestId!==liveRequest)return;
    console.error("Pipe-Web live infrastructure feed failed:",error);
-   setFeedState("Live feed unavailable · "+(error.message||"network error")+" · retry by changing view","error");
- }
+   setFeedState(controller.signal.aborted?"Live feed timed out or was superseded · try again":"Live feed unavailable · "+(error.message||"network error")+" · retry by changing view","error");
+ }finally{clearTimeout(timeout);if(activeRequest===controller)activeRequest=null;}
 }
 
-function setLayer(name){if(!corridors[name])return;document.querySelectorAll(".layer-pill").forEach(button=>{const active=button.dataset.layer===name;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});render(name);}
+function setLayer(name){if(!corridors[name])return;document.querySelectorAll(".layer-pill").forEach(button=>{const active=button.dataset.layer===name;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});scheduleRender(name);}
 function syncMobileLayers(){const source=$("layerTray"),target=$("mobileLayerButtons");if(!source||!target||target.childElementCount)return;source.querySelectorAll(".layer-pill").forEach(button=>{const clone=button.cloneNode(true);clone.addEventListener("click",()=>setLayer(clone.dataset.layer));target.appendChild(clone);});}
 function openMenu(open){$("landingMenu").hidden=!open;$("menuToggle").setAttribute("aria-expanded",String(open));}
 function openSettings(open){$("landingSettings").hidden=!open;$("settingsToggle").setAttribute("aria-expanded",String(open));}
@@ -123,5 +130,5 @@ $("layerSheetBackdrop").addEventListener("click",()=>{$("layerSheet").hidden=tru
 $("mobileLayersToggle").addEventListener("click",()=>{$("layerSheet").hidden=false;$("layerSheetBackdrop").hidden=false;});
 document.addEventListener("click",event=>{if(!event.target.closest("#landingMenu,#menuToggle"))openMenu(false);if(!event.target.closest("#landingSettings,#settingsToggle"))openSettings(false);});
 window.addEventListener("hashchange",route);window.addEventListener("resize",()=>state.map&&state.map.invalidateSize());
-syncMobileLayers();if(!initMap())return;setLayer("sea");state.map.on("moveend",()=>{const active=document.querySelector(".layer-pill.active");if(active)render(active.dataset.layer);});route();
+syncMobileLayers();if(!initMap())return;setLayer("sea");state.map.on("moveend",()=>{const active=document.querySelector(".layer-pill.active");if(active)scheduleRender(active.dataset.layer);});route();
 })();
