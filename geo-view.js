@@ -2,7 +2,7 @@
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  let mode = "schematic", map = null, mapLayers = [];
+  let mode = "schematic", map = null, mapLayers = [], ribbonRenderer = null;
   const worldLayers = {
     air: { title:"GLOBAL AIR CONNECTIVITY", description:"Illustrative connections between major world aviation hubs.", hubs:[
       ["New York",40.7128,-74.006],["London",51.5074,-0.1278],["Dubai",25.2048,55.2708],["Singapore",1.3521,103.8198],["Tokyo",35.6762,139.6503],["Los Angeles",34.0522,-118.2437],["São Paulo",-23.5505,-46.6333],["Johannesburg",-26.2041,28.0473],["Sydney",-33.8688,151.2093],["Delhi",28.6139,77.209],["Paris",48.8566,2.3522],["Toronto",43.6532,-79.3832],["Mexico City",19.4326,-99.1332],["Istanbul",41.0082,28.9784],["Doha",25.2854,51.531]
@@ -25,6 +25,7 @@
     if(map||!window.L)return;
     map=L.map("geoMap",{zoomControl:true,worldCopyJump:true,minZoom:2,maxZoom:18}).setView([22,15],2);
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(map);
+    ribbonRenderer=typeof L.svg==="function"?L.svg({padding:.5}).addTo(map):null;
   }
   function safeText(value){return String(value??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
   function setMode(next){
@@ -72,8 +73,8 @@
   function drawFlowPath(from,to,options){
     const color=options.color,reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const css="pipeweb-flow-ribbon pipeweb-flow-ribbon--"+options.mode;let layer;
-    if(typeof L.bezier==="function"){
-      const config={curve:"arc",deep:5,color,weight:2.8,opacity:.9,dashArray:"10 6",lineCap:"round",lineJoin:"round",className:css};
+    if(typeof L.bezier==="function"&&ribbonRenderer){
+      const config={curve:"arc",deep:5,color,weight:2.8,opacity:.9,dashArray:"10 6",lineCap:"round",lineJoin:"round",className:css,renderer:ribbonRenderer};
       if(!reduce){config.animate=1500;config.duration=8000;config.easing="flight";config.travel=1;config.loop=true;}
       layer=L.bezier({path:[[{lat:from.lat,lng:from.lng},{lat:to.lat,lng:to.lng}]],icon:reduce?undefined:{svg:flowIconSvg(color),size:18,rotate:true,scaleWithZoom:false,className:"pipeweb-flow-token"}},config).addTo(map);
       if(layer&&typeof layer.eachLayer==="function")layer.eachLayer(part=>part.bindTooltip(options.label,{sticky:true}));
