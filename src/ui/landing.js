@@ -37,17 +37,21 @@
     try {
       state.globe = Globe()(host)
         .rendererConfig({ preserveDrawingBuffer: true, antialias: !isMobile(), alpha: false, powerPreference: "high-performance" })
-        .backgroundColor("#071321")
-        .showAtmosphere(true).atmosphereColor("#287da3").atmosphereAltitude(0.16)
-        .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
-        .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
+        .backgroundColor("#020306")
+        .showAtmosphere(true).atmosphereColor("#28617a").atmosphereAltitude(0.12)
         .showGraticules(false)
         .pointLat(d => d.lat).pointLng(d => d.lng)
         .pointColor(d => d.color).pointRadius(d => d.radius || 0.14)
         .pointAltitude(0.002).pointResolution(8)
         .pointLabel(d => d.label)
         .onPointClick(d => toast(d.label || "Observed vessel"))
-        .onGlobeReady(() => status("Earth loaded · waiting for live observations", "connecting"));
+        .onGlobeReady(() => status("Dark globe loaded · waiting for live observations", "connecting"));
+      if (window.THREE && typeof window.THREE.MeshPhongMaterial === "function" && state.globe.globeMaterial) {
+        state.globe.globeMaterial(new window.THREE.MeshPhongMaterial({
+          color: 0x020406, emissive: 0x02070b, emissiveIntensity: 0.22,
+          specular: 0x183044, shininess: 9
+        }));
+      }
       state.globe.width(host.clientWidth).height(host.clientHeight);
       state.globe.controls().autoRotate = true;
       state.globe.controls().autoRotateSpeed = 0.3;
