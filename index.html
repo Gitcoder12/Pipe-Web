@@ -7,7 +7,7 @@
   <meta name="description" content="Pipe-Web — a global intelligence system for discovering the fastest paths through connected networks.">
   <title>Pipe-Web — Live Global Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=flow-ribbons-1">
+  <link rel="stylesheet" href="styles.css?v=trade-taxonomy-1">
 </head>
 <body>
 <div id="earthBackdrop" aria-hidden="true"></div>
@@ -107,12 +107,12 @@
       </div>
       <p id="flowSourceNote" class="flow-source-note">Reported trade statistics are not live cargo telemetry. Vessel positions are observed AIS reports; cargo details are not inferred from position data.</p>
     </div>
-    <div class="flow-map-toolbar"><div><span class="map-eyebrow">GLOBAL MAP / SELECT A FLOW TO INSPECT</span></div><div class="flow-map-legend"><span><i class="legend-live"></i>Reported trade link</span><span><i class="legend-muted"></i>Network context</span></div></div>
+    <div class="flow-map-toolbar"><div><span class="map-eyebrow">GLOBAL MAP / SELECT A FLOW TO INSPECT</span></div><div class="flow-map-legend"><span><i class="legend-live"></i>Reported trade partner relationship</span><span><i class="legend-muted"></i>Network context</span></div></div>
     <div id="flowMap" aria-label="Interactive global map showing selected network flows"></div>
     <div class="flow-map-footer"><span id="flowMapSource">SOURCE: UN COMTRADE · REPORTED TRADE DATA</span><span id="flowMapPeriod">PERIOD: 2024</span></div>
     <div class="flow-metrics" id="flowMetrics">
-      <div><span>REPORTED TRADE VALUE</span><b id="flowTotalValue">—</b><small>USD · selected country and category</small></div>
-      <div><span>TRADE PARTNERS</span><b id="flowPartnerCount">—</b><small>Returned partner records</small></div>
+      <div><span>RETURNED PREVIEW SUBTOTAL</span><b id="flowTotalValue">—</b><small>USD · API preview rows, up to 500</small></div>
+      <div><span>UNIQUE PARTNERS</span><b id="flowPartnerCount">—</b><small>Within returned preview rows</small></div>
       <div><span>DATA PERIOD</span><b id="flowDataPeriod">—</b><small id="flowFreshness">Waiting for source response</small></div>
       <div><span>LIVE VEHICLES</span><b id="flowVesselCount">NOT CONNECTED</b><small id="flowVesselNote">Live provider not configured</small></div>
     </div>
