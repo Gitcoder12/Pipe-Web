@@ -41,11 +41,35 @@
             const mmsi = String(meta.MMSI ?? p.UserID ?? p.MMSI ?? "");
             if (!mmsi || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
             const sog = Number(p.Sog ?? p.SpeedOverGround), cog = Number(p.Cog ?? p.CourseOverGroundTrue);
-            this.ships.set(mmsi, { mmsi, lat, lon, sog: Number.isFinite(sog) ? sog : null,
-              cog: Number.isFinite(cog) ? cog : null, name: meta.ShipName || p.Name || "",
-              shipType: meta.ShipType ?? null, time: meta.time_utc || new Date().toISOString(), receivedAt: Date.now() });
-            this.lastMessageAt = Date.now();
-            if (window.PipeWebRecorder) window.PipeWebRecorder.record("ship", this.ships.get(mmsi)).catch(() => {});
+            const receivedAt = Date.now();
+            const time = meta.time_utc || new Date(receivedAt).toISOString();
+            const positionTime = Number.isFinite(Date.parse(time)) ? Date.parse(time) : receivedAt;
+            const previous = this.ships.get(mmsi);
+            const trail = previous && Array.isArray(previous.trail) ? previous.trail.slice() : [];
+            const last = trail[trail.length - 1];
+            const distanceKm = last ? (() => {
+              const rad = value => value * Math.PI / 180;
+              const dLat = rad(lat - last.lat), dLon = rad(lon - last.lon);
+              const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(rad(last.lat)) * Math.cos(rad(lat)) * Math.sin(dLon / 2) ** 2;
+              return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            })() : Infinity;
+            if (!last || distanceKm >= 0.15 || positionTime - last.time >= 120000) {
+              trail.push({ lat, lon, time: positionTime });
+              if (trail.length > 24) trail.splice(0, trail.length - 24);
+            }
+            const ship = {
+              mmsi, lat, lon, sog: Number.isFinite(sog) ? sog : null,
+              cog: Number.isFinite(cog) ? cog : null, name: meta.ShipName || previous?.name || p.Name || "",
+              shipType: meta.ShipType ?? previous?.shipType ?? null,
+              time, receivedAt, trail
+            };
+            this.ships.set(mmsi, ship);
+            this.lastMessageAt = receivedAt;
+            if (window.PipeWebRecorder) {
+              const { trail: _trail, ...observation } = ship;
+              window.PipeWebRecorder.record("ship", observation).catch(() => {});
+            }
           } catch (_) { /* Ignore malformed provider frames. */ }
         };
         this.ws.onerror = () => { if (this.active) { this.status = "ERROR"; this.emit(); } };
