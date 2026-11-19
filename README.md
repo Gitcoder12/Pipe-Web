@@ -16,6 +16,23 @@ The 3D Earth view uses the Globe.gl renderer with an online Blue Marble texture.
 
 The globe falls back to the 2D map if the 3D renderer cannot initialize. External datasets are loaded at runtime; availability depends on the user's network, provider uptime, CORS policy, and usage limits.
 
+## Current landing map data integration
+
+The map-first landing page queries the public OpenStreetMap Overpass API for infrastructure geometry inside the current map viewport:
+
+| Landing layer | Current query | Data meaning |
+|---|---|---|
+| Sea | Mapped ferry-route ways | Infrastructure/service geometry, not live vessel positions |
+| Road | Motorway, trunk, and primary road ways | Mapped road geometry, not live congestion |
+| Rail | Railway and narrow-gauge ways | Mapped railway geometry |
+| Pipe | Ways tagged as pipelines | Mapped pipeline geometry; coverage may be sparse |
+| Air | Not connected on the landing map | No fabricated flight paths |
+| Digital | Not connected on the landing map | No fabricated submarine cable or backbone paths |
+
+Queries are viewport-bounded and run after zooming in. Map movement requests the visible area again. Overpass availability, response time, and coverage depend on public infrastructure and service limits. Do not poll aggressively.
+
+This landing-map integration is separate from the legacy AIS and aircraft modules described below. Those modules are not currently rendered by the map-first landing page. The Overpass timestamp indicates when the query completed; it does not mean the underlying OpenStreetMap edits were made at that time.
+
 ## Network coverage and honest status
 
 - **Roads:** geographic OpenStreetMap road graph can be loaded for a searched area in the route planner. Requests are bounded to protect public Overpass services.
