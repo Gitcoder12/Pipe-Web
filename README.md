@@ -44,6 +44,19 @@ This landing-map integration is separate from the legacy AIS and aircraft module
 
 A public dataset is not automatically live telemetry. Pipe-Web labels source, coverage, date, and limitations rather than presenting estimates or schematic connections as observed movement.
 
+## Security and verification
+
+- Imported GeoJSON/GPX node labels are rendered as text, not interpreted as HTML. SVG text labels are escaped before insertion.
+- Route-planner endpoint options are created with DOM APIs and `textContent`, so names originating in imported data cannot inject markup.
+- Third-party visualization script URLs are version-pinned. Leaflet already uses Subresource Integrity (SRI); the Globe.gl and TopoJSON scripts still need verified integrity hashes before they can be described as SRI-protected. Do not copy unverified hashes into production.
+- The route-planner worker has deterministic tests for shortest-path selection, disconnected destinations, one-way edges, and alternate routes.
+
+Run the worker tests with Node.js:
+
+```bash
+node --test tests/path-worker.test.js
+```
+
 ## Route optimization
 
 The route planner supports:
