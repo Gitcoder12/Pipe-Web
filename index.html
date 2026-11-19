@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0a0a0a">
   <meta name="description" content="Pipe-Web — a global intelligence system for discovering the fastest paths through connected networks.">
-  <title>Pipe-Web — Live Global Map</title>
+  <title>Pipe-Web — Global Infrastructure Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=live-osm-3">
+  <link rel="stylesheet" href="styles.css?v=security-hardening-1">
 </head>
 <body>
 <div id="earthBackdrop" aria-hidden="true"></div>
@@ -17,7 +17,7 @@
   <div id="liveGlobe" class="live-globe" aria-label="Global flow corridor map"></div>
   <div id="liveMap" class="live-map" aria-label="Global flow paths map" hidden></div>
   <div class="landing-vignette" aria-hidden="true"></div>
-  <aside class="flow-legend glass" aria-label="Live data legend"><span><i class="legend-line fast"></i> Live mapped infrastructure</span><small>OpenStreetMap data · not live traffic or speed rankings</small></aside>
+  <aside class="flow-legend glass" aria-label="Infrastructure data legend"><span><i class="legend-line fast"></i> Live mapped infrastructure</span><small>OpenStreetMap data · not live traffic or speed rankings</small></aside>
   <header class="landing-top glass">
     <div class="landing-brand-group">
       <button id="menuToggle" class="landing-icon" aria-label="Open navigation" aria-expanded="false">☰</button>
@@ -235,12 +235,12 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="https://unpkg.com/globe.gl" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/globe.gl';"></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="https://unpkg.com/globe.gl@2.46.2" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/globe.gl@2.46.2';"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script src="config.js"></script>
   <script src="src/osm/cache.js"></script>
   <script src="src/osm/overpass.js"></script><script src="app.js"></script><script src="geo-view.js"></script><script src="src/feeds/recorder.js"></script><script src="src/feeds/maritime.js"></script>
 <script src="flow-explorer.js"></script>
-<script src="src/ui/landing.js?v=live-osm-3"></script>
+<script src="src/ui/landing.js?v=security-hardening-1"></script>
 </body>
 </html>
