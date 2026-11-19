@@ -16,6 +16,8 @@ assert.ok(html.indexOf("leaflet.js") < html.indexOf("leaflet.bezier"), "Leaflet 
 assert.doesNotMatch(html, /globe\.gl|id="liveGlobe"|id="geoGlobe"/);
 
 assert.match(ui, /function drawFlowPath\(/);
+assert.match(ui, /state\.ribbonRenderer=L\.svg/);
+assert.match(ui, /renderer:state\.ribbonRenderer/);
 assert.match(ui, /L\.bezier\(/);
 assert.match(ui, /function drawCorridorRibbons\(/);
 assert.match(ui, /prefers-reduced-motion: reduce/);
