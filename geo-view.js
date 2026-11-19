@@ -1,34 +1,8 @@
-/* Pipe-Web geospatial layer. Geographic positions are explicitly illustrative demo coordinates. */
+/* Pipe-Web geospatial layer. Global links are schematic until provider-backed route geometry is integrated. */
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const center = null;
-  let mode = "schematic", map = null, globe = null, mapLayers = [], globeReady = false;
-  const AIRCRAFT_API = window.PIPEWEB_CONFIG && window.PIPEWEB_CONFIG.aircraftApi;
-  const AIRCRAFT_REFRESH_MS = 15 * 60 * 1000;
-  let backdropGlobe = null;
-  function initEarthBackdrop() {
-    const host = $("earthBackdrop");
-    if (!host || !window.Globe || backdropGlobe) return;
-    backdropGlobe = Globe()(host)
-      .width(window.innerWidth)
-      .height(window.innerHeight)
-      .backgroundColor("rgba(0,0,0,0)")
-      .showAtmosphere(true)
-      .atmosphereColor("#28617a")
-      .atmosphereAltitude(0.12)
-      .globeImageUrl("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%202048%201024%22%3E%3Crect%20width%3D%222048%22%20height%3D%221024%22%20fill%3D%22%23020406%22%2F%3E%3C%2Fsvg%3E")
-      .showGraticules(false)
-      .rendererConfig({ alpha: true, antialias: false, powerPreference: "low-power" });
-    if (window.THREE && typeof window.THREE.MeshPhongMaterial === "function" && backdropGlobe.globeMaterial) {
-      backdropGlobe.globeMaterial(new window.THREE.MeshPhongMaterial({ color:0x020406, emissive:0x02070b, emissiveIntensity:0.22, specular:0x183044, shininess:9 }));
-    }
-    backdropGlobe.controls().enabled = false;
-    backdropGlobe.controls().autoRotate = true;
-    backdropGlobe.controls().autoRotateSpeed = 0.22;
-  }
-  // The hidden backdrop globe was consuming a WebGL context before the landing globe initialized.
-  let aircraftCache = [], aircraftFetchedAt = 0, aircraftBusy = false, aircraftTimer = null;
+  let mode = "schematic", map = null, mapLayers = [];
   const worldLayers = {
     air: { title:"GLOBAL AIR CONNECTIVITY", description:"Illustrative connections between major world aviation hubs.", hubs:[
       ["New York",40.7128,-74.006],["London",51.5074,-0.1278],["Dubai",25.2048,55.2708],["Singapore",1.3521,103.8198],["Tokyo",35.6762,139.6503],["Los Angeles",34.0522,-118.2437],["São Paulo",-23.5505,-46.6333],["Johannesburg",-26.2041,28.0473],["Sydney",-33.8688,151.2093],["Delhi",28.6139,77.209],["Paris",48.8566,2.3522],["Toronto",43.6532,-79.3832],["Mexico City",19.4326,-99.1332],["Istanbul",41.0082,28.9784],["Doha",25.2854,51.531]
@@ -43,173 +17,87 @@
       ["North Sea",56,3],["London",51.5074,-0.1278],["Algiers",36.7538,3.0588],["Cairo",30.0444,31.2357],["Riyadh",24.7136,46.6753],["Doha",25.2854,51.531],["Mumbai",19.076,72.8777],["Singapore",1.3521,103.8198],["Perth",-31.9505,115.8605],["Tokyo",35.6762,139.6503],["Baku",40.4093,49.8671],["Berlin",52.52,13.405],["Lagos",6.5244,3.3792],["Johannesburg",-26.2041,28.0473]
     ],links:[["North Sea","London"],["North Sea","Berlin"],["Algiers","London"],["Algiers","Cairo"],["Cairo","Riyadh"],["Riyadh","Doha"],["Doha","Mumbai"],["Mumbai","Singapore"],["Singapore","Perth"],["Perth","Tokyo"],["Baku","Berlin"],["Lagos","Johannesburg"],["Doha","Tokyo"]]}
   };
-  const nodeCoords = (node) => ({
-    lat: Number.isFinite(node[4]) ? node[4] : null,
-    lng: Number.isFinite(node[5]) ? node[5] : null
-  });
-  function state(){ return window.PipeWeb ? window.PipeWeb.getState() : null; }
-  function setMode(next) {
-    mode = next;
-    $("networkMap").hidden = next !== "schematic";
-    $("geoMap").hidden = next !== "map";
-    $("geoGlobe").hidden = next !== "globe" && next !== "world";
-    $("worldControls").hidden = next !== "world";
-    document.querySelectorAll(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.view === next));
-    if (next === "map") { ensureMap(); if(!map){$("geoMap").innerHTML='<div class="geo-error">Map library could not load. Check your internet connection or use the schematic view.</div>';return} drawMap(); setTimeout(() => map && map.invalidateSize(), 80); }
-    if (next === "globe" || next === "world") { ensureGlobe(); if(!globe){$("geoGlobe").innerHTML='<div class="geo-error">3D globe library could not load. Check your internet connection or use the 2D map.</div>';return} if(next==="world")drawWorld();else drawLiveEarth(); }
+
+  const nodeCoords = (node) => ({lat:Number.isFinite(node[4])?node[4]:null,lng:Number.isFinite(node[5])?node[5]:null});
+  function state(){return window.PipeWeb?window.PipeWeb.getState():null;}
+  function clearMapLayers(){mapLayers.forEach(layer=>{if(map&&map.hasLayer(layer))map.removeLayer(layer);});mapLayers=[];}
+  function ensureMap(){
+    if(map||!window.L)return;
+    map=L.map("geoMap",{zoomControl:true,worldCopyJump:true,minZoom:2,maxZoom:18}).setView([22,15],2);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(map);
   }
-  function ensureMap() {
-    if (map || !window.L) return;
-    map = L.map("geoMap", { zoomControl:true }).setView([center.lat, center.lng], 12);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      maxZoom:19, attribution:'&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    }).addTo(map);
+  function safeText(value){return String(value??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+  function setMode(next){
+    mode=next;
+    const isMap=next==="map"||next==="world";
+    $("networkMap").hidden=isMap;$("geoMap").hidden=!isMap;$("worldControls").hidden=next!=="world";
+    document.querySelectorAll(".view-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===next));
+    if(!isMap)return;
+    ensureMap();
+    if(!map){$("mapHint").textContent="Leaflet map unavailable · check the network and reload";return;}
+    if(next==="world")drawWorld();else drawMap();
+    setTimeout(()=>map&&map.invalidateSize(),80);
   }
-  function drawMap() {
-    const s=state(); if(!s||!map) return;
-    mapLayers.forEach(layer=>map.removeLayer(layer));mapLayers=[];
-    if(s.network.nodes.some(n=>!Number.isFinite(n[4])||!Number.isFinite(n[5]))){$("geoMap").innerHTML="<div class=\"geo-error\">2D route plotting: Not yet implemented for networks without imported geographic coordinates.</div>";return;}
+  function drawMap(){
+    const s=state();if(!s||!map)return;clearMapLayers();
+    if(!s.network.nodes.every(n=>Number.isFinite(n[4])&&Number.isFinite(n[5]))){
+      $("mapHint").textContent="Import geographic GeoJSON/GPX or load OpenStreetMap roads to plot this route.";
+      return;
+    }
+    $("mapHint").textContent="Mapped network geometry · route alternatives";
     const nodes=Object.fromEntries(s.network.nodes.map(n=>[n[0],{raw:n,...nodeCoords(n)}]));
     s.network.edges.forEach(e=>{
-      const a=nodes[e[0]],b=nodes[e[1]],key=[e[0],e[1]].sort().join("-");
-      const layer=L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{
-        color:s.network.congested.includes(key)?"#8e6346":"#64748b",
-        weight:2,opacity:0.42,dashArray:"3 7"
-      }).addTo(map);
-      layer.bindTooltip(e[0]+" ↔ "+e[1]);mapLayers.push(layer);
+      const a=nodes[e[0]],b=nodes[e[1]];if(!a||!b)return;
+      const line=L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{color:"#718391",weight:1.7,opacity:.36,dashArray:"3 7"}).addTo(map);
+      line.bindTooltip(e[0]+" ↔ "+e[1]);mapLayers.push(line);
     });
-    const rankColors=["#35d39a","#e8b94e","#ef6262"];
+    const ranks=["#168b61","#c58a19","#d14d4d"];
     (s.paths||[]).map((path,index)=>({path,index})).reverse().forEach(({path,index})=>{
-      const color=rankColors[Math.min(index,2)],selected=index===s.selected;
+      const color=ranks[Math.min(index,2)],selected=index===s.selected;
       path.edges.forEach(e=>{
-        const a=nodes[e[0]],b=nodes[e[1]];
-        const line=L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{
-          color,weight:selected?7:4,opacity:selected?1:0.78,
-          lineCap:"round",lineJoin:"round",className:"pipeweb-route-flow"
-        }).addTo(map);
-        line.bindTooltip((index===0?"FASTEST":index===1?"MEDIUM":"SLOWEST")+" · "+e[0]+" → "+e[1]);
-        mapLayers.push(line);
+        const a=nodes[e[0]],b=nodes[e[1]];if(!a||!b)return;
+        const line=L.polyline([[a.lat,a.lng],[b.lat,b.lng]],{color,weight:selected?6:3.5,opacity:selected?.98:.72,lineCap:"round",lineJoin:"round",className:"pipeweb-route-flow"}).addTo(map);
+        line.bindTooltip((index===0?"FASTEST":index===1?"ALTERNATIVE":"OTHER ROUTE")+" · "+e[0]+" → "+e[1]);mapLayers.push(line);
       });
     });
     s.network.nodes.forEach(n=>{
-      const p=nodes[n[0]],isOrigin=n[0]===s.origin,isDest=n[0]===s.destination;
-      const marker=L.circleMarker([p.lat,p.lng],{radius:isOrigin||isDest?8:5,color:isOrigin?"#e5b66c":isDest?"#67c9e8":"#d7e2ee",fillColor:isOrigin?"#e5b66c":isDest?"#67c9e8":"#26394e",fillOpacity:1,weight:2}).addTo(map);
-      marker.bindPopup("<b>"+n[0]+" · "+n[1]+"</b><br>"+(Number.isFinite(n[4])?"Imported geographic network node":"Illustrative demo node")+"<br>"+p.lat.toFixed(5)+", "+p.lng.toFixed(5));mapLayers.push(marker);
+      const p=nodes[n[0]],origin=n[0]===s.origin,destination=n[0]===s.destination;if(!p)return;
+      const marker=L.circleMarker([p.lat,p.lng],{radius:origin||destination?6:3.5,color:"#fff",fillColor:origin?"#168b61":destination?"#d14d4d":"#526b7b",fillOpacity:1,weight:1.5}).addTo(map);
+      marker.bindTooltip(safeText(n[0])+" · "+safeText(n[1]));
+      marker.bindPopup("<b>"+safeText(n[0])+" · "+safeText(n[1])+"</b><br>Imported geographic network node<br>"+p.lat.toFixed(5)+", "+p.lng.toFixed(5));mapLayers.push(marker);
     });
-    if(mapLayers.length){const bounds=L.featureGroup(mapLayers).getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(0.12),{maxZoom:16});}
-    $("geoMap").setAttribute("aria-label","Interactive geographic visualization with fastest, medium and slow route alternatives");
+    if(mapLayers.length){const bounds=L.featureGroup(mapLayers).getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(.12),{maxZoom:16});}
   }
-  
-  function ensureGlobe() {
-    if (globeReady || !window.Globe) return;
-    globeReady=true;
-    globe=Globe()($("geoGlobe"))
-      .backgroundColor("#020306")
-      .showAtmosphere(true).atmosphereColor("#28617a").atmosphereAltitude(0.12)
-      .globeImageUrl("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%202048%201024%22%3E%3Crect%20width%3D%222048%22%20height%3D%221024%22%20fill%3D%22%23020406%22%2F%3E%3C%2Fsvg%3E")
-      .pointAltitude(d=>d.altitudeM==null?0.008:Math.min(0.035,0.006+d.altitudeM/450000)).pointRadius(d=>d.onGround?0.12:0.2).pointColor(d=>d.color)
-      .arcColor(d=>d.color).arcAltitude(0.18).arcStroke(0.7)
-      .arcDashLength(0.45).arcDashGap(0.25).arcDashAnimateTime(1800);
-    if (window.THREE && typeof window.THREE.MeshPhongMaterial === "function" && globe.globeMaterial) {
-      globe.globeMaterial(new window.THREE.MeshPhongMaterial({ color:0x020406, emissive:0x02070b, emissiveIntensity:0.22, specular:0x183044, shininess:9 }));
+  function flowIconSvg(color){return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.1" fill="#fff" stroke="'+color+'" stroke-width="2.4"/><path d="M12 4.3 16.2 13l-4.2-2-4.2 2z" fill="'+color+'"/></svg>';}
+  function drawFlowPath(from,to,options){
+    const color=options.color,reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const css="pipeweb-flow-ribbon pipeweb-flow-ribbon--"+options.mode;let layer;
+    if(typeof L.bezier==="function"){
+      const config={curve:"arc",deep:5,color,weight:2.8,opacity:.9,dashArray:"10 6",lineCap:"round",lineJoin:"round",className:css};
+      if(!reduce){config.animate=1500;config.duration=8000;config.easing="flight";config.travel=1;config.loop=true;}
+      layer=L.bezier({path:[[{lat:from.lat,lng:from.lng},{lat:to.lat,lng:to.lng}]],icon:reduce?undefined:{svg:flowIconSvg(color),size:18,rotate:true,scaleWithZoom:false,className:"pipeweb-flow-token"}},config).addTo(map);
+      if(layer&&typeof layer.eachLayer==="function")layer.eachLayer(part=>part.bindTooltip(options.label,{sticky:true}));
+    }else{
+      layer=L.polyline([[from.lat,from.lng],[to.lat,to.lng]],{color,weight:2.8,opacity:.9,dashArray:"10 6",className:css}).addTo(map);
+      layer.bindTooltip(options.label,{sticky:true});
     }
-    globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
-    globe.controls().autoRotate=true; globe.controls().autoRotateSpeed=0.35;
+    mapLayers.push(layer);return layer;
   }
-  function drawWorld() {
-    if (!globe) return;
-    if($("worldFlowType").value==="maritime"&&window.PipeWebMaritime){
-      const feed=window.PipeWebMaritime.snapshot(),ships=feed.ships||[];
-      if(ships.length){
-        globe.pointsData(ships.map(s=>({lat:s.lat,lng:s.lon,color:s.sog>15?"#e7b96c":s.sog>5?"#65d5b0":"#70b9ee",label:(s.name||"Vessel "+s.mmsi)+" · "+(s.sog==null?"speed n/a":s.sog.toFixed(1)+" kn")}))).pointLabel("label").arcsData([]);
-        globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
-        $("networkName").textContent="LIVE MARITIME POSITIONS · OPENSEAFEED";
-        $("nodeCount").textContent=ships.length.toLocaleString()+" OBSERVED VESSELS";
-        $("worldDescription").textContent="Live AIS position reports. Coverage varies by receiver network; vessel positions are not cargo or trade-volume data.";
-        return;
-      }
-    }
-    const layer=worldLayers[$("worldFlowType").value]||worldLayers.air;
-    const hubs=layer.hubs.map(([name,lat,lng])=>({name,lat,lng}));
-    const byName=Object.fromEntries(hubs.map(h=>[h.name,h]));
-    const arcs=layer.links.map(([a,b],i)=>({startLat:byName[a].lat,startLng:byName[a].lng,endLat:byName[b].lat,endLng:byName[b].lng,color:["#62d6b1","#70b9ee","#e7b96c","#b49af5"][i%4]}));
-    globe.pointsData(hubs.map(h=>({...h,color:"#e9c27b"}))).pointLabel("name").arcsData(arcs);
-    globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
+  function drawWorld(){
+    if(!map)return;clearMapLayers();
+    const key=$("worldFlowType").value,layer=worldLayers[key]||worldLayers.air;
+    const palette={air:"#2ecc40",digital:"#9b59b6",maritime:"#0077b6",energy:"#ff8c00"},color=palette[key]||"#2476a8";
+    const hubs=layer.hubs.map(([name,lat,lng])=>({name,lat,lng})),byName=Object.fromEntries(hubs.map(h=>[h.name,h]));
+    layer.links.forEach(([a,b])=>{if(byName[a]&&byName[b])drawFlowPath(byName[a],byName[b],{mode:key,color,label:a+" → "+b+" · schematic connection"});});
+    hubs.forEach(h=>{const marker=L.circleMarker([h.lat,h.lng],{radius:3.2,color:"#fff",weight:1.3,fillColor:color,fillOpacity:1}).addTo(map);marker.bindTooltip(h.name,{direction:"top",offset:[0,-4]});mapLayers.push(marker);});
     $("networkName").textContent=layer.title;
-    $("nodeCount").textContent=String(hubs.length)+" GLOBAL HUBS · "+String(arcs.length)+" ILLUSTRATIVE LINKS";
-    $("worldDescription").textContent=layer.description+" Not live traffic or infrastructure telemetry.";
+    $("nodeCount").textContent=hubs.length+" NAMED HUBS · "+layer.links.length+" SCHEMATIC LINKS";
+    $("worldDescription").textContent=layer.description+" Curved ribbons are illustrative hub-to-hub connections, not verified operational routes or live traffic.";
+    $("mapHint").textContent="Mode-coloured animated ribbons · hover a line or hub for its name";
+    map.setView([20,10],2);
   }
-  function setAircraftStatus(state, message) {
-    const pill=$("aircraftStatus");
-    if(pill){pill.className="feed-pill "+(state==="LIVE"?"feed-live":state==="OFFLINE"?"feed-error":"feed-loading");pill.innerHTML="<i></i> "+state;}
-    if(message&&$("aircraftCoverage"))$("aircraftCoverage").textContent=message;
-  }
-  function renderAircraft() {
-    if(!globe)return;
-    const points=aircraftCache.map(a=>({
-      lat:a.latitude,lng:a.longitude,callsign:a.callsign||a.icao24,
-      country:a.originCountry||"Unknown country",altitudeM:a.altitudeM,
-      onGround:a.onGround,velocityMs:a.velocityMs,headingDeg:a.headingDeg,
-      color:a.onGround?"#e9b96b":"#70dcff"
-    }));
-    globe.pointsData(points).pointLabel(d=>"<b>"+String(d.callsign).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+"</b><br>"+String(d.country).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))+"<br>"+(d.altitudeM==null?"Altitude unavailable":Math.round(d.altitudeM).toLocaleString()+" m")+" · "+(d.velocityMs==null?"Speed unavailable":Math.round(d.velocityMs*3.6)+" km/h"));
-    globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
-  }
-  async function fetchAircraft(force=false) {
-    if(aircraftBusy)return;
-    if(!AIRCRAFT_API){setAircraftStatus("OFFLINE","Aircraft Worker: Not yet implemented until endpoint configured.");$("aircraftSource").textContent="Not yet implemented: deploy workers/live-api.js and set aircraftApi in config.js.";return;}
-    if(!force&&aircraftFetchedAt&&Date.now()-aircraftFetchedAt<AIRCRAFT_REFRESH_MS){renderAircraft();return;}
-    aircraftBusy=true;setAircraftStatus("CONNECTING","REQUESTING CONFIGURED WORKER");
-    try{
-      const response=await fetch(AIRCRAFT_API,{headers:{accept:"application/json"},cache:"no-store"});
-      if(!response.ok)throw new Error("OpenSky returned HTTP "+response.status);
-      const payload=await response.json();
-      const parsed=Array.isArray(payload.aircraft)?payload.aircraft.filter(a=>Number.isFinite(a.longitude)&&Number.isFinite(a.latitude)):((Array.isArray(payload.states)?payload.states:[]).flatMap(v=>{
-        if(!Number.isFinite(v[5])||!Number.isFinite(v[6]))return [];
-        return [{icao24:v[0],callsign:(v[1]||"").trim(),originCountry:v[2],longitude:v[5],latitude:v[6],altitudeM:Number.isFinite(v[7])?v[7]:null,onGround:Boolean(v[8]),velocityMs:Number.isFinite(v[9])?v[9]:null,headingDeg:Number.isFinite(v[10])?v[10]:null}];
-      }));
-      if(payload.status==="OFFLINE")throw new Error(payload.error||"Aircraft provider offline");
-      aircraftCache=parsed;aircraftFetchedAt=Date.now();renderAircraft();
-      $("aircraftCount").textContent=parsed.length.toLocaleString();
-      $("aircraftUpdated").textContent=new Date(aircraftFetchedAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
-      $("nodeCount").textContent=parsed.length.toLocaleString()+" OBSERVED AIRCRAFT";
-      $("networkName").textContent="LIVE AIRCRAFT POSITIONS · OPENSKY NETWORK";
-      setAircraftStatus("LIVE","OBSERVED POSITIONS · 15-MINUTE REFRESH");
-      $("aircraftSource").textContent="Source: OpenSky Network · ADS-B state vectors · receiver coverage is incomplete";
-    }catch(error){
-      const stale=aircraftCache.length>0;
-      setAircraftStatus(stale?"STALE":"OFFLINE",stale?"SHOWING LAST SUCCESSFUL SNAPSHOT":"LIVE FEED UNAVAILABLE");
-      $("aircraftSource").textContent="OpenSky feed unavailable: "+(error&&error.message?error.message:"network error")+". No simulated aircraft are shown.";
-      if(!stale){$("aircraftCount").textContent="—";$("aircraftUpdated").textContent="—";}
-    }finally{aircraftBusy=false;}
-  }
-  function drawLiveEarth() {
-    if(!globe)return;
-    if(!aircraftCache.length){setAircraftStatus("CONNECTING","FETCHING LIVE POSITIONS");}
-    else renderAircraft();
-    fetchAircraft();
-    if(aircraftTimer)clearInterval(aircraftTimer);
-    aircraftTimer=setInterval(()=>{if(mode==="globe")fetchAircraft(true);},AIRCRAFT_REFRESH_MS);
-  }
-  function drawGlobe() {
-    const s=state();if(!s||!globe)return;
-    const nodes=Object.fromEntries(s.network.nodes.map(n=>[n[0],{raw:n,...nodeCoords(n)}]));
-    const points=s.network.nodes.map(n=>{const p=nodes[n[0]];return{lat:p.lat,lng:p.lng,color:n[0]===s.origin?"#e5b66c":n[0]===s.destination?"#67c9e8":"#b8c9dc",label:n[0]+" · "+n[1]};});
-    const rankColors=["#35d39a","#e8b94e","#ef6262"];
-    const arcs=[];
-    (s.paths||[]).map((path,index)=>({path,index})).reverse().forEach(({path,index})=>path.edges.forEach(e=>arcs.push({
-      startLat:nodes[e[0]].lat,startLng:nodes[e[0]].lng,
-      endLat:nodes[e[1]].lat,endLng:nodes[e[1]].lng,
-      color:rankColors[Math.min(index,2)],selected:index===s.selected
-    })));
-    globe.pointsData(points).pointLabel("label").arcsData(arcs)
-      .arcColor(d=>d.color).arcStroke(d=>d.selected?1.1:0.65);
-    globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
-  }
-  
   document.querySelectorAll(".view-btn").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.view)));
   $("worldFlowType").addEventListener("change",drawWorld);
-  window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();if(mode==="globe")drawLiveEarth();if(mode==="world")drawWorld();});
-  window.addEventListener("pipeweb:maritime:update",()=>{if(mode==="world"&&$("worldFlowType").value==="maritime")drawWorld();});
-  window.addEventListener("resize",()=>{if(mode==="map"&&map)map.invalidateSize();if((mode==="globe"||mode==="world")&&globe)globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);if(backdropGlobe)backdropGlobe.width(window.innerWidth).height(window.innerHeight);});
+  window.addEventListener("pipeweb:render",()=>{if(mode==="map")drawMap();});
+  window.addEventListener("resize",()=>{if(map)map.invalidateSize();});
 })();
