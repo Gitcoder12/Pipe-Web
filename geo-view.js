@@ -15,12 +15,13 @@
       .height(window.innerHeight)
       .backgroundColor("rgba(0,0,0,0)")
       .showAtmosphere(true)
-      .atmosphereColor("#4c9fc4")
-      .atmosphereAltitude(0.19)
-      .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
-      .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
+      .atmosphereColor("#28617a")
+      .atmosphereAltitude(0.12)
       .showGraticules(false)
       .rendererConfig({ alpha: true, antialias: false, powerPreference: "low-power" });
+    if (window.THREE && typeof window.THREE.MeshPhongMaterial === "function" && backdropGlobe.globeMaterial) {
+      backdropGlobe.globeMaterial(new window.THREE.MeshPhongMaterial({ color:0x020406, emissive:0x02070b, emissiveIntensity:0.22, specular:0x183044, shininess:9 }));
+    }
     backdropGlobe.controls().enabled = false;
     backdropGlobe.controls().autoRotate = true;
     backdropGlobe.controls().autoRotateSpeed = 0.22;
@@ -102,13 +103,14 @@
     if (globeReady || !window.Globe) return;
     globeReady=true;
     globe=Globe()($("geoGlobe"))
-      .backgroundColor("#08111e")
-      .showAtmosphere(true).atmosphereColor("#4c9bba").atmosphereAltitude(0.18)
-      .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
-      .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
+      .backgroundColor("#020306")
+      .showAtmosphere(true).atmosphereColor("#28617a").atmosphereAltitude(0.12)
       .pointAltitude(d=>d.altitudeM==null?0.008:Math.min(0.035,0.006+d.altitudeM/450000)).pointRadius(d=>d.onGround?0.12:0.2).pointColor(d=>d.color)
       .arcColor(d=>d.color).arcAltitude(0.18).arcStroke(0.7)
       .arcDashLength(0.45).arcDashGap(0.25).arcDashAnimateTime(1800);
+    if (window.THREE && typeof window.THREE.MeshPhongMaterial === "function" && globe.globeMaterial) {
+      globe.globeMaterial(new window.THREE.MeshPhongMaterial({ color:0x020406, emissive:0x02070b, emissiveIntensity:0.22, specular:0x183044, shininess:9 }));
+    }
     globe.width($("geoGlobe").clientWidth).height($("geoGlobe").clientHeight);
     globe.controls().autoRotate=true; globe.controls().autoRotateSpeed=0.35;
   }
