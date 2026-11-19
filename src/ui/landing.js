@@ -39,6 +39,7 @@
         .rendererConfig({ preserveDrawingBuffer: true, antialias: !isMobile(), alpha: false, powerPreference: "high-performance" })
         .backgroundColor("#020306")
         .showAtmosphere(true).atmosphereColor("#28617a").atmosphereAltitude(0.12)
+        .globeImageUrl("data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="2048" height="1024"%3E%3Crect width="100%25" height="100%25" fill="%23020406"/%3E%3C/svg%3E")
         .showGraticules(false)
         .pointLat(d => d.lat).pointLng(d => d.lng)
         .pointColor(d => d.color).pointRadius(d => d.radius || 0.14)
