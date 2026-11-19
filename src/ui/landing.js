@@ -5,7 +5,7 @@
   const MOBILE_QUERY = "(max-width: 767px)";
   const isMobile = () => window.matchMedia(MOBILE_QUERY).matches;
   const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-  const state = { view: isMobile() ? "2d" : "3d", ships: new Map(), air: [], map: null, markers: new Map(), globe: null, unsubscribe: null, tiltEnabled: false, toastTimer: null };
+  const state = { view: isMobile() ? "2d" : "3d", ships: new Map(), air: [], map: null, markers: new Map(), globe: null, unsubscribe: null, tiltEnabled: false, toastTimer: null, worldDataLoading: false, worldDataLoaded: false, countries: [], rivers: [] };
   const shipColor = speed => {
     const value = Number.isFinite(speed) ? Math.max(0, Math.min(35, speed)) : 0;
     const ratio = value / 35;
@@ -54,12 +54,67 @@
       state.globe.controls().enableDamping = true;
       state.globe.controls().dampingFactor = 0.08;
       state.globe.pointOfView({ lat: 22, lng: 10, altitude: 2.1 }, 0);
+      loadWorldDatasets();
       return true;
     } catch (error) {
       console.error("Pipe-Web globe initialization failed:", error);
       state.globe = null;
       return false;
     }
+  }
+  async function loadWorldDatasets() {
+    if (state.worldDataLoading || state.worldDataLoaded || !state.globe) return;
+    state.worldDataLoading = true;
+    const countryUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+    const riverUrl = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_rivers_lake_centerlines.geojson";
+    const [countryResult, riverResult] = await Promise.allSettled([
+      fetch(countryUrl, { mode: "cors", cache: "force-cache" }).then(response => {
+        if (!response.ok) throw new Error("Country boundaries HTTP " + response.status);
+        return response.json();
+      }),
+      fetch(riverUrl, { mode: "cors", cache: "force-cache" }).then(response => {
+        if (!response.ok) throw new Error("River network HTTP " + response.status);
+        return response.json();
+      })
+    ]);
+    if (countryResult.status === "fulfilled" && window.topojson) {
+      try {
+        const topology = countryResult.value;
+        state.countries = window.topojson.feature(topology, topology.objects.countries).features;
+        state.globe.polygonsData(state.countries)
+          .polygonAltitude(0.0012)
+          .polygonCapColor(() => "rgba(22, 58, 72, 0.10)")
+          .polygonSideColor(() => "rgba(0, 0, 0, 0)")
+          .polygonStrokeColor(() => "rgba(151, 194, 207, 0.38)")
+          .polygonLabel(feature => escapeHtml(feature.properties && feature.properties.name || "Country"));
+      } catch (error) {
+        console.warn("Country boundary layer unavailable:", error);
+      }
+    }
+    if (riverResult.status === "fulfilled") {
+      const features = riverResult.value.features || [];
+      state.rivers = features.filter(feature => feature.geometry && ["LineString", "MultiLineString"].includes(feature.geometry.type));
+      state.globe.pathsData(state.rivers)
+        .pathPoints(feature => {
+          const coordinates = feature.geometry.type === "LineString"
+            ? feature.geometry.coordinates
+            : feature.geometry.coordinates.flat();
+          return coordinates.map(([lng, lat]) => ({ lat, lng }));
+        })
+        .pathPointLat(point => point.lat)
+        .pathPointLng(point => point.lng)
+        .pathColor(() => "rgba(73, 157, 197, 0.58)")
+        .pathStroke(0.35)
+        .pathAltitude(0.0015)
+        .pathResolution(2);
+    }
+    state.worldDataLoaded = true;
+    state.worldDataLoading = false;
+    const loaded = (state.countries.length ? "country boundaries" : "") +
+      (state.countries.length && state.rivers.length ? " + " : "") +
+      (state.rivers.length ? "river geometry" : "");
+    if (loaded) status("Earth online · " + loaded + " loaded", state.ships.size ? "live" : "connecting");
+    else status("Earth texture loaded · vector datasets unavailable", "error");
   }
   function initMap() {
     if (!window.L || state.map) return;
