@@ -144,7 +144,7 @@ async function render(name,refreshRibbons=true){
    setFeedState(controller.signal.aborted?"OSM request timed out or was superseded · illustrative ribbons remain visible":"OSM unavailable · "+(error.message||"network error")+" · illustrative ribbons remain visible","error");
  }finally{clearTimeout(timeout);if(activeRequest===controller)activeRequest=null;}
 }
-function setLayer(name){if(!corridors[name])return;document.querySelectorAll(".layer-pill").forEach(button=>{const active=button.dataset.layer===name;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});const swatch=$("flowRibbonSwatch");if(swatch)swatch.style.backgroundColor=ribbonColors[name]||"#64748b";scheduleRender(name,true);}
+function setLayer(name){if(!corridors[name])return;document.querySelectorAll(".layer-pill").forEach(button=>{const active=button.dataset.layer===name;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});const swatch=$("flowRibbonSwatch");if(swatch)swatch.style.borderColor=ribbonColors[name]||"#64748b";scheduleRender(name,true);}
 function syncMobileLayers(){const source=$("layerTray"),target=$("mobileLayerButtons");if(!source||!target||target.childElementCount)return;source.querySelectorAll(".layer-pill").forEach(button=>{const clone=button.cloneNode(true);clone.addEventListener("click",()=>setLayer(clone.dataset.layer));target.appendChild(clone);});}
 function openMenu(open){$("landingMenu").hidden=!open;$("menuToggle").setAttribute("aria-expanded",String(open));}
 function openSettings(open){$("landingSettings").hidden=!open;$("settingsToggle").setAttribute("aria-expanded",String(open));}
