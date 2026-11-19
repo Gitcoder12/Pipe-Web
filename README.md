@@ -29,7 +29,7 @@ The map-first landing page queries the public OpenStreetMap Overpass API for inf
 
 Queries are viewport-bounded and run after zooming in. Map movement requests the visible area again. Overpass availability, response time, and coverage depend on public infrastructure and service limits. Do not poll aggressively.
 
-This landing-map integration is separate from the legacy AIS and aircraft modules described below. Those modules are not currently rendered by the map-first landing page. The Overpass timestamp indicates when the query completed; it does not mean the underlying OpenStreetMap edits were made at that time.
+This landing-map integration is separate from the AIS layer in the lower flow explorer. The map-first landing page shows mapped infrastructure plus schematic ribbons; it does not display live vessel or aircraft positions. The Overpass timestamp indicates when the query completed; it does not mean the underlying OpenStreetMap edits were made at that time.
 
 ## Animated 2D flow ribbons
 
