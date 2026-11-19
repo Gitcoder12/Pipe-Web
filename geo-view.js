@@ -17,6 +17,7 @@
       .showAtmosphere(true)
       .atmosphereColor("#28617a")
       .atmosphereAltitude(0.12)
+      .globeImageUrl("data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="2048" height="1024"%3E%3Crect width="100%25" height="100%25" fill="%23020406"/%3E%3C/svg%3E")
       .showGraticules(false)
       .rendererConfig({ alpha: true, antialias: false, powerPreference: "low-power" });
     if (window.THREE && typeof window.THREE.MeshPhongMaterial === "function" && backdropGlobe.globeMaterial) {
@@ -105,6 +106,7 @@
     globe=Globe()($("geoGlobe"))
       .backgroundColor("#020306")
       .showAtmosphere(true).atmosphereColor("#28617a").atmosphereAltitude(0.12)
+      .globeImageUrl("data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="2048" height="1024"%3E%3Crect width="100%25" height="100%25" fill="%23020406"/%3E%3C/svg%3E")
       .pointAltitude(d=>d.altitudeM==null?0.008:Math.min(0.035,0.006+d.altitudeM/450000)).pointRadius(d=>d.onGround?0.12:0.2).pointColor(d=>d.color)
       .arcColor(d=>d.color).arcAltitude(0.18).arcStroke(0.7)
       .arcDashLength(0.45).arcDashGap(0.25).arcDashAnimateTime(1800);
