@@ -1,7 +1,6 @@
-/* Public client configuration. Never put provider credentials here. */
+/* Public endpoint configuration. Deploy workers/live-api.js and set its base URL here. */
 window.PIPEWEB_CONFIG = Object.freeze({
-  // Configure after deploying workers/live-api.js. Example: https://your-worker.workers.dev/api/aircraft
+  liveApiBase: "",
   aircraftApi: "",
-  // Licensed AIS integrations must be configured server-side.
-  vesselsApi: ""
+  railApi: ""
 });
