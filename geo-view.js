@@ -113,10 +113,7 @@
     globe.controls().autoRotate=true; globe.controls().autoRotateSpeed=0.35;
   }
   function drawWorld() {
-    globe.pointsData([]).arcsData([]);
-    $("networkName").textContent="WORLD FLOWS"; $("nodeCount").textContent="NOT YET IMPLEMENTED";
-    $("worldDescription").textContent="Verified global corridor geometry and live flow telemetry: Not yet implemented.";
-    return;
+    if (!globe) return;
     if($("worldFlowType").value==="maritime"&&window.PipeWebMaritime){
       const feed=window.PipeWebMaritime.snapshot(),ships=feed.ships||[];
       if(ships.length){
