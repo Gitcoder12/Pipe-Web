@@ -93,14 +93,15 @@
     }
     if (riverResult.status === "fulfilled") {
       const features = riverResult.value.features || [];
-      state.rivers = features.filter(feature => feature.geometry && ["LineString", "MultiLineString"].includes(feature.geometry.type));
+      state.rivers = [];
+      features.forEach(feature => {
+        const geometry = feature.geometry;
+        if (!geometry) return;
+        if (geometry.type === "LineString") state.rivers.push(geometry.coordinates);
+        if (geometry.type === "MultiLineString") geometry.coordinates.forEach(line => state.rivers.push(line));
+      });
       state.globe.pathsData(state.rivers)
-        .pathPoints(feature => {
-          const coordinates = feature.geometry.type === "LineString"
-            ? feature.geometry.coordinates
-            : feature.geometry.coordinates.flat();
-          return coordinates.map(([lng, lat]) => ({ lat, lng }));
-        })
+        .pathPoints(line => line.map(([lng, lat]) => ({ lat, lng })))
         .pathPointLat(point => point.lat)
         .pathPointLng(point => point.lng)
         .pathColor(() => "rgba(73, 157, 197, 0.58)")
