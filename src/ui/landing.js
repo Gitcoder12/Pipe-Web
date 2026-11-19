@@ -1,240 +1,231 @@
-/* Pipe-Web globe-first landing controller. Live data only; no synthetic traffic. */
+/* Pipe-Web flow-first globe and section router. WebGL is initialized only on the globe route. */
 (() => {
   "use strict";
   const $ = id => document.getElementById(id);
-  const MOBILE_QUERY = "(max-width: 767px)";
-  const isMobile = () => window.matchMedia(MOBILE_QUERY).matches;
-  const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-  const state = { view: isMobile() ? "2d" : "3d", ships: new Map(), air: [], map: null, markers: new Map(), globe: null, unsubscribe: null, tiltEnabled: false, toastTimer: null };
-  const shipColor = speed => {
-    const value = Number.isFinite(speed) ? Math.max(0, Math.min(35, speed)) : 0;
-    const ratio = value / 35;
-    const red = Math.round(40 + ratio * 215), green = Math.round(145 - ratio * 105), blue = Math.round(235 - ratio * 190);
-    return "rgb(" + red + "," + green + "," + blue + ")";
+  const isMobile = () => window.matchMedia("(max-width: 767px)").matches;
+  const state = { view:isMobile()?"2d":"3d", map:null, globe:null, flowLayers:[],
+    seaTracks:[], airTracks:[], railTracks:[], active:new Set(["sea"]),
+    unsubscribers:{}, toastTimer:null, landingStarted:false, tiltEnabled:false };
+  const colorForShipType = type => {
+    const n=Number(type);
+    if(n>=80&&n<=89)return "#ff986b"; // tanker
+    if(n>=70&&n<=79)return "#61c6ff"; // cargo
+    if(n>=60&&n<=69)return "#b69cff"; // passenger
+    if(n>=30&&n<=39)return "#6de0b2"; // fishing
+    if(n>=50&&n<=59)return "#e5cf73"; // service
+    return "#72d7d0";
+  };
+  const apiEndpoint = (key,path) => {
+    const cfg=window.PIPEWEB_CONFIG||{};
+    return cfg[key]||(cfg.liveApiBase?cfg.liveApiBase.replace(/\/$/,"")+path:"");
   };
   function toast(message) {
-    const el = $("landingToast"); if (!el) return;
-    el.textContent = message; el.classList.add("show");
-    clearTimeout(state.toastTimer); state.toastTimer = setTimeout(() => el.classList.remove("show"), 2400);
+    const el=$("landingToast"); if(!el)return;
+    el.textContent=message;el.classList.add("show");
+    clearTimeout(state.toastTimer);state.toastTimer=setTimeout(()=>el.classList.remove("show"),3200);
   }
-  function status(message, mode) {
-    $("liveCounts").textContent = message;
-    $("feedPulse").className = "feed-pulse" + (mode === "live" ? " is-live" : mode === "error" ? " is-error" : "");
+  function status(message,mode="connecting") {
+    $("liveCounts").textContent=message;
+    $("feedPulse").className="feed-pulse"+(mode==="live"?" is-live":mode==="error"?" is-error":"");
   }
-  function updateCounts() {
-    const shipCount = state.ships.size;
-    const airCount = state.air.length;
-    const airConfigured = state.air.length > 0;
-    const shipLabel = shipCount.toLocaleString() + " ships";
-    const airLabel = airConfigured ? airCount.toLocaleString() + " aircraft" : "air: Not yet implemented";
-    status(shipCount ? "🚢 " + shipLabel + " · ✈️ " + airLabel : "Connecting to live feed…", shipCount ? "live" : "connecting");
+  function activeTracks() {
+    return [
+      ...(state.active.has("sea")?state.seaTracks:[]),
+      ...(state.active.has("air")?state.airTracks:[]),
+      ...(state.active.has("rail")?state.railTracks:[])
+    ];
+  }
+  function segments() {
+    const output=[];
+    for(const track of activeTracks()) {
+      const pts=track.points||[];
+      for(let i=Math.max(1,pts.length-6);i<pts.length;i++) {
+        const a=pts[i-1],b=pts[i];
+        if(!a||!b||!Number.isFinite(a.lat)||!Number.isFinite(a.lon)||
+          !Number.isFinite(b.lat)||!Number.isFinite(b.lon)||b.timestamp<=a.timestamp)continue;
+        output.push({startLat:a.lat,startLng:a.lon,endLat:b.lat,endLng:b.lon,
+          color:track.color||"#72d7d0",altitude:0.075,stroke:0.9});
+      }
+    }
+    return output.slice(-1200);
+  }
+  function updateStatus() {
+    const count=segments().length,feed=window.PipeWebMaritime?.status||"OFFLINE";
+    if(count)status("LIVE FLOW · "+count.toLocaleString()+" observed trail segments · AIS "+feed,"live");
+    else if(feed==="LIVE")status("AIS LIVE · waiting for repeat positions to form flow trails","live");
+    else status("AIS "+feed+" · no verified movement trail yet",feed==="ERROR"?"error":"connecting");
   }
   function initGlobe() {
-    if (isMobile() || !window.Globe || state.globe) return;
-    const host = $("liveGlobe");
-    state.globe = Globe()(host)
-      .rendererConfig({ preserveDrawingBuffer: true, antialias: true, alpha: false })
+    if(state.globe||!window.Globe)return;
+    const host=$("liveGlobe");
+    state.globe=Globe()(host)
+      .rendererConfig({preserveDrawingBuffer:true,antialias:true,alpha:false})
       .backgroundColor("#0a0a0a")
       .showAtmosphere(true).atmosphereColor("#287da3").atmosphereAltitude(0.16)
       .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-night.jpg")
       .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
       .showGraticules(false)
-      .pointLat(d => d.lat).pointLng(d => d.lng)
-      .pointColor(d => d.color).pointRadius(d => d.radius || 0.14)
-      .pointAltitude(0.002).pointResolution(8)
-      .pointLabel(d => d.label)
-      .onPointClick(d => toast(d.label || "Observed vessel"));
+      .arcsData([]).arcColor(d=>d.color).arcAltitude(d=>d.altitude)
+      .arcStroke(d=>d.stroke).arcDashLength(0.52).arcDashGap(0.18)
+      .arcDashAnimateTime(2200).arcsTransitionDuration(650).pointsData([]);
     state.globe.width(host.clientWidth).height(host.clientHeight);
-    state.globe.controls().autoRotate = true;
-    state.globe.controls().autoRotateSpeed = 0.3;
-    state.globe.controls().enableDamping = true;
-    state.globe.controls().dampingFactor = 0.08;
-    state.globe.pointOfView({ lat: 22, lng: 10, altitude: 2.1 }, 0);
+    state.globe.controls().autoRotate=true;state.globe.controls().autoRotateSpeed=0.28;
+    state.globe.controls().enableDamping=true;state.globe.controls().dampingFactor=0.08;
+    state.globe.pointOfView({lat:20,lng:10,altitude:2.1},0);
   }
   function initMap() {
-    if (!window.L || state.map) return;
-    state.map = L.map("liveMap", { zoomControl: false, worldCopyJump: true, preferCanvas: true, attributionControl: true }).setView([24, 8], 2);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 8, attribution: '&copy; OpenStreetMap &copy; CARTO'
-    }).addTo(state.map);
+    if(state.map||!window.L)return;
+    state.map=L.map("liveMap",{zoomControl:false,worldCopyJump:true,preferCanvas:true,attributionControl:true}).setView([20,0],2);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      {maxZoom:8,attribution:"&copy; OpenStreetMap &copy; CARTO"}).addTo(state.map);
   }
-  function toPoint(ship) {
-    const speed = Number.isFinite(ship.sog) ? ship.sog : null;
-    const name = ship.name || ("Vessel " + (ship.mmsi || "unknown"));
-    const speedText = speed == null ? "Speed unavailable" : speed.toFixed(1) + " kn";
-    return { lat: ship.lat, lng: ship.lon, color: shipColor(speed), radius: 0.16, label: escapeHtml(name) + " · " + speedText };
-  }
-  function renderGlobe() {
-    if (!state.globe) return;
-    const points = [...state.ships.values()].filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lon)).map(toPoint);
-    state.globe.pointsData(points);
-  }
-  function renderMap() {
-    if (!state.map) return;
-    const active = new Set();
-    for (const ship of state.ships.values()) {
-      if (!Number.isFinite(ship.lat) || !Number.isFinite(ship.lon)) continue;
-      const id = String(ship.mmsi); active.add(id);
-      const color = shipColor(ship.sog);
-      let marker = state.markers.get(id);
-      const html = '<span class="live-ship-dot" style="color:' + color + ';background:' + color + '"></span>';
-      if (!marker) {
-        marker = L.marker([ship.lat, ship.lon], { icon: L.divIcon({ className: "live-ship-marker", html, iconSize: [9,9], iconAnchor: [4,4] }) }).addTo(state.map);
-        state.markers.set(id, marker);
-      } else {
-        marker.setLatLng([ship.lat, ship.lon]);
-        marker.setIcon(L.divIcon({ className: "live-ship-marker", html, iconSize: [9,9], iconAnchor: [4,4] }));
+  function render() {
+    const arcs=segments();
+    if(state.globe)state.globe.pointsData([]).arcsData(arcs);
+    if(state.map) {
+      state.flowLayers.forEach(layer=>state.map.removeLayer(layer));state.flowLayers=[];
+      for(const track of activeTracks()) {
+        const pts=(track.points||[]).slice(-7).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+        if(pts.length<2)continue;
+        const line=L.polyline(pts.map(p=>[p.lat,p.lon]),{color:track.color||"#72d7d0",weight:2.6,opacity:.9,
+          lineCap:"round",lineJoin:"round",className:"pipeweb-flow-track"}).addTo(state.map);
+        state.flowLayers.push(line);
       }
-      marker.bindTooltip(escapeHtml(ship.name || ("Vessel " + id)) + " · " + (ship.sog == null ? "Speed n/a" : ship.sog.toFixed(1) + " kn"));
     }
-    for (const [id, marker] of state.markers) if (!active.has(id)) { state.map.removeLayer(marker); state.markers.delete(id); }
+    updateStatus();
   }
-  function render() { renderGlobe(); renderMap(); updateCounts(); }
   function showView(view) {
-    state.view = view;
-    $("liveGlobe").hidden = view !== "3d";
-    $("liveMap").hidden = view !== "2d";
-    $("viewToggle").innerHTML = view === "3d" ? "🌐 <span>3D</span>" : "🗺️ <span>2D</span>";
-    $("viewToggle").setAttribute("aria-label", view === "3d" ? "Switch to 2D map" : "Switch to 3D globe");
-    if (view === "3d") { initGlobe(); renderGlobe(); }
-    else { initMap(); renderMap(); requestAnimationFrame(() => state.map && state.map.invalidateSize()); }
+    state.view=view;
+    $("liveGlobe").hidden=view!=="3d";$("liveMap").hidden=view!=="2d";
+    $("viewToggle").innerHTML=view==="3d"?"🌐 <span>3D</span>":"🗺️ <span>2D</span>";
+    $("viewToggle").setAttribute("aria-label",view==="3d"?"Switch to 2D map":"Switch to 3D globe");
+    if(view==="3d") {initGlobe();render();}
+    else {initMap();render();requestAnimationFrame(()=>state.map?.invalidateSize());}
   }
-  function connectSea() {
-    const feed = window.PipeWebMaritime;
-    if (!feed) { status("Live ship feed unavailable", "error"); return; }
-    if (state.unsubscribe) state.unsubscribe();
-    state.unsubscribe = feed.subscribe(snapshot => {
-      state.ships = new Map((snapshot.ships || []).map(ship => [String(ship.mmsi), ship]));
+  function subscribeSea() {
+    const feed=window.PipeWebMaritime;if(!feed)return;
+    state.unsubscribers.sea?.();
+    state.unsubscribers.sea=feed.subscribe(snapshot=>{
+      state.seaTracks=(snapshot.tracks||[]).map(track=>({...track,color:colorForShipType(track.shipType)}));
       render();
-      if (!state.ships.size && snapshot.status !== "LIVE") status("Connecting to live feed…", "connecting");
-      else if (!state.ships.size) status("Connected · waiting for ship positions…", "connecting");
     });
-    feed.connect();
+    if(feed.status==="DISCONNECTED")feed.connect();
   }
-  function openMenu(open) {
-    $("landingMenu").hidden = !open;
-    $("menuToggle").setAttribute("aria-expanded", String(open));
+  function subscribeOptional(kind) {
+    const air=kind==="air",feed=air?window.PipeWebAircraft:window.PipeWebRail;
+    const endpoint=apiEndpoint(air?"aircraftApi":"railApi",air?"/api/aircraft":"/api/rail");
+    if(!endpoint||!feed) {toast((air?"Aircraft":"Rail")+" flow needs the free-data Worker URL configured in config.js.");return false;}
+    state.unsubscribers[kind]?.();
+    state.unsubscribers[kind]=feed.subscribe(snapshot=>{
+      if(air)state.airTracks=(snapshot.tracks||[]).map(track=>({...track,color:"#b69cff"}));
+      else state.railTracks=(snapshot.tracks||[]).map(track=>({...track,color:"#ffbd70"}));
+      render();
+    });
+    feed.connect(endpoint);return true;
   }
-  function openSettings(open) {
-    $("landingSettings").hidden = !open;
-    $("settingsToggle").setAttribute("aria-expanded", String(open));
+  function syncLayerButtons() {
+    document.querySelectorAll(".layer-pill").forEach(button=>{
+      const active=state.active.has(button.dataset.layer);
+      button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));
+    });
+    document.querySelectorAll("#mobileLayerButtons .layer-pill").forEach(button=>{
+      const original=document.querySelector('#layerTray [data-layer="'+button.dataset.layer+'"]');
+      if(original){button.classList.toggle("active",original.classList.contains("active"));button.setAttribute("aria-pressed",original.getAttribute("aria-pressed"));}
+    });
   }
-  function setLayer(name, enabled) {
-    const button = document.querySelector('.layer-pill[data-layer="' + name + '"]');
-    if (button) { button.classList.toggle("active", enabled); button.setAttribute("aria-pressed", String(enabled)); }
-    if (name === "sea") {
-      if (enabled) connectSea();
-      else if (window.PipeWebMaritime) { window.PipeWebMaritime.disconnect(false); if (state.unsubscribe) state.unsubscribe(); state.unsubscribe = null; }
-      return;
+  function setLayer(name,enabled) {
+    if(name==="sea") {
+      if(enabled){state.active.add(name);subscribeSea();}
+      else {state.active.delete(name);window.PipeWebMaritime?.disconnect(false);}
+    } else if(name==="air"||name==="rail") {
+      if(enabled) {
+        if(subscribeOptional(name))state.active.add(name);
+        else state.active.delete(name);
+      } else {
+        state.active.delete(name);
+        (name==="air"?window.PipeWebAircraft:window.PipeWebRail)?.disconnect();
+      }
+    } else {
+      state.active.delete(name);
+      if(enabled)toast(name.charAt(0).toUpperCase()+name.slice(1)+" flow: Not yet implemented.");
     }
-    if (name === "air") {
-      if (button) { button.classList.remove("active"); button.setAttribute("aria-pressed", "false"); }
-      toast("Air layer: Not yet implemented in the landing globe.");
-      return;
+    syncLayerButtons();render();
+  }
+  function openMenu(open) {$("landingMenu").hidden=!open;$("menuToggle").setAttribute("aria-expanded",String(open));}
+  function openSettings(open) {$("landingSettings").hidden=!open;$("settingsToggle").setAttribute("aria-expanded",String(open));}
+  function route() {
+    const hash=location.hash||"#/";
+    if(hash==="#"||hash==="#/"||hash==="") {
+      document.body.classList.remove("legacy-route");$("legacyWorkspace").setAttribute("aria-hidden","true");
+      openMenu(false);openSettings(false);return false;
     }
-    if (button) { button.classList.remove("active"); button.setAttribute("aria-pressed", "false"); }
-    if (enabled) toast(name.charAt(0).toUpperCase() + name.slice(1) + " layer: Not yet implemented.");
+    const routes={"#/route-planner":"route-planner","#/corridors":"intelligence",
+      "#/bottlenecks":"intelligence","#/sankey":"flowMap","#/statistics":"flowMetrics"};
+    const target=routes[hash];
+    if(!target){toast("Unknown section. Returning to the live globe.");location.hash="#/";return true;}
+    document.body.classList.add("legacy-route");$("legacyWorkspace").setAttribute("aria-hidden","false");
+    openMenu(false);
+    requestAnimationFrame(()=>{
+      const el=$(target);if(el)el.scrollIntoView({behavior:"auto",block:"start"});
+      if(target==="flowMap")window.dispatchEvent(new CustomEvent("pipeweb:section-visible",{detail:{id:"flowMap"}}));
+    });
+    return true;
+  }
+  function safeShowView(view) {try{showView(view);}catch(error){toast("Globe view unavailable: "+(error?.message||"graphics initialization failed"));}}
+  function startLanding() {
+    if(state.landingStarted){safeShowView(state.view);return;}
+    state.landingStarted=true;
+    if(isMobile()){$("viewToggle").disabled=true;$("viewToggle").title="3D is disabled on mobile";}
+    safeShowView(state.view);subscribeSea();
+  }
+  function syncRoute(){if(!route())startLanding();}
+  function enableTilt() {
+    if(!isMobile()||typeof DeviceOrientationEvent==="undefined"){toast("Phone tilt is unavailable on this device.");$("tiltToggle").checked=false;return;}
+    const activate=()=>{state.tiltEnabled=true;window.addEventListener("deviceorientation",onOrientation,{passive:true});toast("Tilt navigation enabled.");};
+    if(typeof DeviceOrientationEvent.requestPermission==="function")
+      DeviceOrientationEvent.requestPermission().then(result=>result==="granted"?activate():toast("Motion permission denied.")).catch(()=>toast("Motion sensors unavailable."));
+    else activate();
+  }
+  function onOrientation(event) {
+    if(!state.tiltEnabled||!state.map)return;
+    const gamma=Math.max(-25,Math.min(25,Number(event.gamma)||0));
+    const beta=Math.max(-25,Math.min(25,(Number(event.beta)||0)-35));
+    const center=state.map.getCenter();state.map.panTo([center.lat-beta*.002,center.lng+gamma*.002],{animate:false});
+  }
+  function screenshot() {
+    if(state.view!=="3d"||!state.globe){toast("Switch to 3D before taking a globe capture.");return;}
+    try{const link=document.createElement("a");link.href=state.globe.renderer().domElement.toDataURL("image/png");link.download="pipe-web-flow-globe.png";link.click();}
+    catch(_){toast("Screenshot blocked by browser graphics security.");}
   }
   function syncMobileLayers() {
-    const source = $("layerTray"), target = $("mobileLayerButtons");
-    if (!source || !target || target.childElementCount) return;
-    source.querySelectorAll(".layer-pill").forEach(button => {
-      const clone = button.cloneNode(true);
-      clone.addEventListener("click", () => {
-        const original = source.querySelector('[data-layer="' + clone.dataset.layer + '"]');
-        const enabled = !original.classList.contains("active");
-        setLayer(clone.dataset.layer, enabled);
-        clone.classList.toggle("active", original.classList.contains("active"));
-        clone.setAttribute("aria-pressed", original.getAttribute("aria-pressed"));
-      });
+    const target=$("mobileLayerButtons");
+    if(target.childElementCount)return;
+    document.querySelectorAll("#layerTray .layer-pill").forEach(button=>{
+      const clone=button.cloneNode(true);
+      clone.addEventListener("click",()=>setLayer(clone.dataset.layer,!state.active.has(clone.dataset.layer)));
       target.appendChild(clone);
     });
   }
-  async function enableTilt() {
-    if (!isMobile()) { toast("Phone tilt navigation is available on mobile."); return; }
-    if (typeof DeviceOrientationEvent === "undefined") { toast("Motion sensors are not available in this browser."); return; }
-    try {
-      if (typeof DeviceOrientationEvent.requestPermission === "function") {
-        const permission = await DeviceOrientationEvent.requestPermission();
-        if (permission !== "granted") throw new Error("Motion permission was not granted.");
-      }
-      state.tiltEnabled = true;
-      window.addEventListener("deviceorientation", onOrientation, { passive: true });
-      toast("Tilt navigation enabled.");
-    } catch (error) { toast(error.message || "Could not enable motion sensors."); $("tiltToggle").checked = false; }
-  }
-  let lastTiltAt = 0;
-  function onOrientation(event) {
-    if (!state.tiltEnabled || !state.map) return;
-    const now = Date.now(); if (now - lastTiltAt < 100) return; lastTiltAt = now;
-    const gamma = Math.max(-25, Math.min(25, Number(event.gamma) || 0));
-    const beta = Math.max(-25, Math.min(25, (Number(event.beta) || 0) - 35));
-    const center = state.map.getCenter();
-    state.map.panTo([center.lat - beta * 0.002, center.lng + gamma * 0.002], { animate: false });
-  }
-  function takeScreenshot() {
-    if (state.view !== "3d" || !state.globe) { toast("Switch to 3D to capture the globe."); return; }
-    try {
-      const canvas = state.globe.renderer().domElement;
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement("a"); link.href = image; link.download = "pipe-web-globe.png";
-      document.body.appendChild(link); link.click(); link.remove();
-      toast("Globe screenshot saved.");
-    } catch (_) { toast("Screenshot blocked by browser graphics security."); }
-  }
-  function route() {
-    const hash = location.hash || "#/";
-    if (hash === "#/" || hash === "#" || hash === "") {
-      document.body.classList.remove("legacy-route");
-      $("legacyWorkspace").setAttribute("aria-hidden", "true");
-      openMenu(false); openSettings(false); return;
-    }
-    const routes = {
-      "#/route-planner": "route-planner",
-      "#/corridors": "intelligence",
-      "#/bottlenecks": "intelligence",
-      "#/sankey": "flowMap",
-      "#/statistics": "flowMetrics"
-    };
-    const target = routes[hash];
-    if (!target) { toast("Unknown section. Returning to the live globe."); location.hash = "#/"; return; }
-    document.body.classList.add("legacy-route");
-    $("legacyWorkspace").setAttribute("aria-hidden", "false");
-    openMenu(false);
-    requestAnimationFrame(() => {
-      const el = $(target); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      if (target === "flowMap" && window.dispatchEvent) window.dispatchEvent(new Event("resize"));
-    });
-  }
-  $("menuToggle").addEventListener("click", () => openMenu($("landingMenu").hidden));
-  $("settingsToggle").addEventListener("click", () => openSettings($("landingSettings").hidden));
-  $("viewToggle").addEventListener("click", () => {
-    if (isMobile()) { showView("2d"); toast("3D globe is disabled on small screens for performance."); }
-    else showView(state.view === "3d" ? "2d" : "3d");
+  $("menuToggle").addEventListener("click",()=>openMenu($("landingMenu").hidden));
+  $("settingsToggle").addEventListener("click",()=>openSettings($("landingSettings").hidden));
+  $("viewToggle").addEventListener("click",()=>{if(isMobile()){safeShowView("2d");toast("3D globe is disabled on small screens.");}else safeShowView(state.view==="3d"?"2d":"3d");});
+  $("screenshotBtn").addEventListener("click",screenshot);
+  $("tiltToggle").addEventListener("change",event=>{if(event.target.checked)enableTilt();else{state.tiltEnabled=false;window.removeEventListener("deviceorientation",onOrientation);}});
+  $("layerTray").addEventListener("click",event=>{const button=event.target.closest(".layer-pill");if(button)setLayer(button.dataset.layer,!state.active.has(button.dataset.layer));});
+  $("layerSheetBackdrop").addEventListener("click",()=>{$("layerSheet").hidden=true;$("layerSheetBackdrop").hidden=true;});
+  $("mobileLayersToggle").addEventListener("click",()=>{$("layerSheet").hidden=false;$("layerSheetBackdrop").hidden=false;});
+  $("landingMenu").addEventListener("click",event=>{if(event.target.closest("a"))requestAnimationFrame(syncRoute);});
+  document.addEventListener("click",event=>{
+    if(!event.target.closest("#landingMenu,#menuToggle"))openMenu(false);
+    if(!event.target.closest("#landingSettings,#settingsToggle"))openSettings(false);
   });
-  $("screenshotBtn").addEventListener("click", takeScreenshot);
-  $("tiltToggle").addEventListener("change", event => { if (event.target.checked) enableTilt(); else { state.tiltEnabled = false; window.removeEventListener("deviceorientation", onOrientation); } });
-  $("layerTray").addEventListener("click", event => {
-    const button = event.target.closest(".layer-pill"); if (!button) return;
-    const name = button.dataset.layer, enabled = !button.classList.contains("active");
-    setLayer(name, enabled);
+  window.addEventListener("hashchange",syncRoute);window.addEventListener("pageshow",syncRoute);
+  window.addEventListener("resize",()=>{
+    if(document.body.classList.contains("legacy-route"))return;
+    if(isMobile()){$("viewToggle").disabled=true;if(state.view!=="2d")safeShowView("2d");else state.map?.invalidateSize();}
+    else{$("viewToggle").disabled=false;if(state.globe)state.globe.width($("liveGlobe").clientWidth).height($("liveGlobe").clientHeight);if(state.map)state.map.invalidateSize();}
   });
-  $("layerSheetBackdrop").addEventListener("click", () => { $("layerSheet").hidden = true; $("layerSheetBackdrop").hidden = true; });
-  $("mobileLayersToggle").addEventListener("click", () => { $("layerSheet").hidden = false; $("layerSheetBackdrop").hidden = false; });
-  $("menuToggle").addEventListener("contextmenu", event => event.preventDefault());
-  document.addEventListener("click", event => {
-    if (!event.target.closest("#landingMenu,#menuToggle")) openMenu(false);
-    if (!event.target.closest("#landingSettings,#settingsToggle")) openSettings(false);
-  });
-  window.addEventListener("hashchange", route);
-  window.addEventListener("resize", () => {
-    if (isMobile()) { $("viewToggle").disabled = true; showView("2d"); }
-    else { $("viewToggle").disabled = false; if (!state.globe) showView("3d"); else if (state.view === "2d") { if (state.map) state.map.invalidateSize(); } else state.globe.width($("liveGlobe").clientWidth).height($("liveGlobe").clientHeight); }
-  });
-  syncMobileLayers();
-  if (isMobile()) { $("viewToggle").disabled = true; $("viewToggle").title = "3D is disabled on mobile"; }
-  showView(state.view);
-  connectSea();
-  route();
-  status("Connecting to live feed…", "connecting");
+  syncMobileLayers();status("Connecting to free movement feeds…");
+  // Resolve the route before creating a WebGL context. A GPU initialization problem must not block navigation.
+  const onSection=route();if(!onSection)startLanding();
 })();
