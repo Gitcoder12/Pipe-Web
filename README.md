@@ -72,6 +72,10 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+## Interview demo
+
+See [docs/INTERVIEW_DEMO.md](docs/INTERVIEW_DEMO.md) for a 90-second product walkthrough, route-planning demo steps, data provenance boundaries, and interview questions.
+
 ## Data attribution
 
 - OpenStreetMap data is © OpenStreetMap contributors and is available under the Open Database License (ODbL).
