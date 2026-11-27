@@ -88,3 +88,9 @@ Then open `http://localhost:8000`.
 ## License
 
 See [LICENSE](LICENSE). Third-party datasets retain their own licenses and attribution requirements.
+
+---
+
+## Repository navigation
+
+[Alphabetical file index](FILE_INDEX.md)
